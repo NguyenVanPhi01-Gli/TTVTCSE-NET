@@ -569,7 +569,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
 <!-- FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, remove, update }
+  import { getDatabase, ref, set, get, onChildAdded, onChildChanged, onChildRemoved, remove, update }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
@@ -587,16 +587,22 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
   const db    = getDatabase(fbApp);
 
   // ── Expose Firebase helpers to global scope ──
-  window._fb = { db, ref, set, onValue, remove, update };
+  window._fb = { db, ref, set, get, remove, update };
 
-  // ── Listen realtime: mỗi khi DB thay đổi → cập nhật UI ──
-  onValue(ref(db, 'ttvtchuse'), (snapshot) => {
+  // ── Chỉ đọc MỘT LẦN khi app mở ──
+  const srcEl = document.getElementById('hdrSrc');
+  if(srcEl) srcEl.innerHTML = '⏳ <span style="color:var(--dim)">Đang kết nối Firebase...</span>';
+
+  get(ref(db, 'ttvtchuse')).then((snapshot) => {
     const data = snapshot.val();
-    if (!data) {
-      // Firebase trống → load demo
-      if (typeof initDemo === 'function') initDemo();
+    if (!data || !data.stations) {
+      // Firebase trống → load demo rồi push lên
+      if (typeof initDemo === 'function') {
+        initDemo();
+        if (typeof pushAllToFirebase === 'function') pushAllToFirebase();
+      }
     } else {
-      // Merge dữ liệu từ Firebase vào DB local
+      // Load dữ liệu từ Firebase vào app
       window.DB = {
         stations: data.stations ? Object.values(data.stations) : [],
         devices:  data.devices  || {},
@@ -607,24 +613,59 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
         labels:   data.labels   || {},
       };
     }
-    // Refresh UI
+    // Render UI sau khi có data
     if (typeof renderSB === 'function') {
       renderSB(window.DB.stations);
       updateStats();
-      if (window.currentStnId) renderTab();
-      else renderWelcome();
+      renderWelcome();
     }
-    // Cập nhật trạng thái kết nối
-    const srcEl = document.getElementById('hdrSrc');
-    if (srcEl) srcEl.innerHTML = '🔴<span style="color:#00ff9d">● Firebase realtime</span>';
-  }, (error) => {
+    if(srcEl) srcEl.innerHTML = '<span style="color:#00ff9d">● Firebase</span>';
+
+  }).catch((error) => {
     console.error('Firebase error:', error);
-    const srcEl = document.getElementById('hdrSrc');
-    if (srcEl) srcEl.innerHTML = '<span style="color:#ff4757">⚠ Firebase lỗi — dùng local</span>';
+    if(srcEl) srcEl.innerHTML = '<span style="color:#ff4757">⚠ Lỗi kết nối — dùng local</span>';
     // Fallback localStorage
-    if (typeof loadFromLocal === 'function') {
-      const ok = loadFromLocal();
-      if (!ok && typeof initDemo === 'function') initDemo();
+    const ok = typeof loadFromLocal === 'function' ? loadFromLocal() : false;
+    if (!ok && typeof initDemo === 'function') initDemo();
+    if (typeof renderSB === 'function') {
+      renderSB(window.DB.stations);
+      updateStats();
+      renderWelcome();
+    }
+  });
+
+  // ── Lắng nghe thay đổi từ người dùng KHÁC (realtime sync) ──
+  // Khi máy khác thêm/sửa/xóa → tự cập nhật UI
+  onChildChanged(ref(db, 'ttvtchuse/stations'), (snapshot) => {
+    const changed = snapshot.val();
+    if(!changed) return;
+    const idx = window.DB.stations.findIndex(s => s.id === changed.id);
+    if(idx >= 0) window.DB.stations[idx] = changed;
+    else window.DB.stations.push(changed);
+    if (typeof renderSB === 'function') renderSB(window.DB.stations);
+    if (typeof updateStats === 'function') updateStats();
+    if (window.currentStnId === changed.id && typeof renderTab === 'function') renderTab();
+  });
+
+  onChildAdded(ref(db, 'ttvtchuse/stations'), (snapshot) => {
+    const added = snapshot.val();
+    if(!added) return;
+    if(!window.DB.stations.find(s => s.id === added.id)) {
+      window.DB.stations.push(added);
+      if (typeof renderSB === 'function') renderSB(window.DB.stations);
+      if (typeof updateStats === 'function') updateStats();
+    }
+  });
+
+  onChildRemoved(ref(db, 'ttvtchuse/stations'), (snapshot) => {
+    const removed = snapshot.val();
+    if(!removed) return;
+    window.DB.stations = window.DB.stations.filter(s => s.id !== removed.id);
+    if (typeof renderSB === 'function') renderSB(window.DB.stations);
+    if (typeof updateStats === 'function') updateStats();
+    if (window.currentStnId === removed.id) {
+      window.currentStnId = null;
+      if (typeof renderWelcome === 'function') renderWelcome();
     }
   });
 </script>
@@ -1318,9 +1359,13 @@ function editStation(id) {
 function deleteStation(id) {
   if(!confirm('Xoá trạm '+id+'? Tất cả dữ liệu thiết bị, ODF, cáp sẽ bị xoá.'))return;
   DB.stations=DB.stations.filter(s=>s.id!==id);
-  delete DB.devices[id]; delete DB.odfs[id]; delete DB.cables[id]; delete DB.power[id]; delete DB.labels[id];
+  delete DB.devices[id]; delete DB.odfs[id]; delete DB.cables[id];
+  delete DB.power[id]; delete DB.labels[id];
   Object.keys(DB.fibers).filter(k=>k.startsWith(id)).forEach(k=>delete DB.fibers[k]);
-  renderSB(DB.stations); updateStats(); renderWelcome(); saveToLocal();
+  // Xóa thẳng trên Firebase
+  deleteStationFromFirebase(id);
+  try { localStorage.setItem('ttvtchuse_net_v3', JSON.stringify(DB)); } catch(e){}
+  renderSB(DB.stations); updateStats(); renderWelcome();
   toast('🗑 Đã xoá trạm '+id);
 }
 
@@ -1625,7 +1670,9 @@ function handleImport(input) {
       added++;
     });
     renderSB(DB.stations); updateStats(); renderWelcome();
-    closeModal('importModal'); saveToLocal();
+    closeModal('importModal');
+    try { localStorage.setItem('ttvtchuse_net_v3', JSON.stringify(DB)); } catch(e){}
+    pushAllToFirebase();
     toast(`✅ Import ${added} trạm thành công${skipped?` (bỏ qua ${skipped} trùng/lỗi)`:''}`);;
   };
   reader.readAsText(file,'UTF-8');
@@ -1648,16 +1695,10 @@ function exportData() {
 
 function resetFirebaseData() {
   if(!confirm('⚠️ XOÁ TOÀN BỘ dữ liệu Firebase và load lại dữ liệu demo?\nThao tác này không thể hoàn tác!')) return;
-  if(!window._fb){toast('⚠ Firebase chưa kết nối');return;}
-  const {db,ref,set}=window._fb;
   initDemo();
-  const stationsObj={};
-  DB.stations.forEach(s=>{stationsObj[s.id]=s;});
-  set(ref(db,'ttvtchuse'),{
-    stations:stationsObj,devices:DB.devices,odfs:DB.odfs,
-    fibers:DB.fibers,cables:DB.cables,power:DB.power,labels:DB.labels,
-    _updated:new Date().toISOString(),
-  }).then(()=>toast('✅ Đã reset dữ liệu demo lên Firebase'));
+  pushAllToFirebase();
+  renderSB(DB.stations); updateStats(); renderWelcome();
+  toast('✅ Đã reset dữ liệu demo lên Firebase');
 }
 
 function showHelp() {
@@ -1665,19 +1706,19 @@ function showHelp() {
 }
 
 // ══════════════════════════════
-// FIREBASE SAVE (thay localStorage)
+// FIREBASE SAVE
 // ══════════════════════════════
 function saveToLocal() {
-  // Vẫn lưu local làm backup
+  // Backup local
   try { localStorage.setItem('ttvtchuse_net_v3', JSON.stringify(DB)); } catch(e) {}
-  // Lưu lên Firebase
+  // Ghi lên Firebase
   saveToFirebase();
 }
 
-function saveToFirebase() {
-  if (!window._fb) return; // Firebase chưa load
+// Push toàn bộ DB lên Firebase (dùng khi reset/import)
+function pushAllToFirebase() {
+  if (!window._fb) return;
   const { db, ref, set } = window._fb;
-  // Chuyển stations array → object để Firebase lưu đẹp hơn
   const stationsObj = {};
   DB.stations.forEach(s => { stationsObj[s.id] = s; });
   set(ref(db, 'ttvtchuse'), {
@@ -1689,12 +1730,51 @@ function saveToFirebase() {
     power:    DB.power    || {},
     labels:   DB.labels   || {},
     _updated: new Date().toISOString(),
-    _updatedBy: navigator.userAgent.substring(0,50),
-  }).then(() => {
-    // toast nhẹ — không cần hiện mỗi lần
   }).catch(err => {
-    console.error('Firebase save error:', err);
-    toast('⚠ Lưu Firebase thất bại — đã lưu local backup');
+    console.error('Firebase push error:', err);
+    toast('⚠ Lưu Firebase thất bại');
+  });
+}
+
+// Ghi thông minh — chỉ ghi đúng phần thay đổi
+function saveToFirebase() {
+  if (!window._fb) { return; }
+  const { db, ref, set } = window._fb;
+  // Ghi stations
+  const stationsObj = {};
+  DB.stations.forEach(s => { stationsObj[s.id] = s; });
+  set(ref(db, 'ttvtchuse/stations'), stationsObj).catch(e => console.error(e));
+  // Ghi phần phụ (devices, odfs, fibers, cables, power, labels)
+  ['devices','odfs','fibers','cables','power','labels'].forEach(key => {
+    if(DB[key] && Object.keys(DB[key]).length > 0) {
+      set(ref(db, 'ttvtchuse/'+key), DB[key]).catch(e => console.error(e));
+    }
+  });
+}
+
+// Ghi 1 trạm cụ thể lên Firebase (nhanh hơn)
+function saveStationToFirebase(stnId) {
+  if (!window._fb) return;
+  const { db, ref, set } = window._fb;
+  const s = DB.stations.find(x => x.id === stnId);
+  if (s) set(ref(db, 'ttvtchuse/stations/'+stnId), s).catch(e=>console.error(e));
+  ['devices','odfs','cables','power','labels'].forEach(key => {
+    if(DB[key][stnId]) set(ref(db,'ttvtchuse/'+key+'/'+stnId), DB[key][stnId]).catch(e=>console.error(e));
+  });
+  // fibers dùng key "stnId|odfId"
+  Object.keys(DB.fibers).filter(k=>k.startsWith(stnId+'|')).forEach(k => {
+    const safeKey = k.replace('|','__');
+    set(ref(db,'ttvtchuse/fibers/'+safeKey), DB.fibers[k]).catch(e=>console.error(e));
+  });
+}
+
+// Xóa 1 trạm khỏi Firebase
+function deleteStationFromFirebase(stnId) {
+  if (!window._fb) return;
+  const { db, ref, remove } = window._fb;
+  remove(ref(db, 'ttvtchuse/stations/'+stnId)).catch(e=>console.error(e));
+  ['devices','odfs','cables','power','labels'].forEach(key => {
+    remove(ref(db,'ttvtchuse/'+key+'/'+stnId)).catch(e=>console.error(e));
   });
 }
 
