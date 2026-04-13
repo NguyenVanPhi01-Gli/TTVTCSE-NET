@@ -1589,30 +1589,50 @@ function handleImport(input) {
   const reader=new FileReader();
   reader.onload=e=>{
     const text=e.target.result;
-    const lines=text.split('\n');
+    // Hỗ trợ cả \r\n và \n
+    const lines=text.split(/\r?\n/);
     if(lines.length<2){alert('File không hợp lệ');return;}
-    const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+    // Bỏ BOM nếu có
+    const rawHeader=lines[0].replace(/^\uFEFF/,'');
+    const headers=rawHeader.split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
     const imported=[];
     for(let i=1;i<lines.length;i++){
-      const vals=lines[i].split(',').map(v=>v.trim().replace(/"/g,''));
+      const line=lines[i].trim();
+      if(!line) continue;
+      const vals=line.split(',').map(v=>v.trim().replace(/"/g,''));
       const obj={};
       headers.forEach((h,j)=>obj[h]=vals[j]||'');
-      if(obj.id||obj['mã trạm']) imported.push(obj);
+      if(!obj.id && !obj['mã trạm']) continue;
+      imported.push(obj);
     }
-    if(!imported.length){alert('Không đọc được dữ liệu. Kiểm tra cấu trúc file.');return;}
+    if(!imported.length){alert('Không đọc được dữ liệu.\nKiểm tra:\n- Header dòng 1 phải là: id,ten,dia_chi,loai,trang_thai,mo_ta,ket_noi,lat,lng\n- Dữ liệu bắt đầu từ dòng 2');return;}
+    let added=0, skipped=0;
     imported.forEach(row=>{
-      const s={id:row.id||row['mã trạm'],ten:row.ten||row['tên trạm']||row.id,dia_chi:row.dia_chi||row['địa chỉ']||'',loai:(row.loai||row['loại']||'access').toLowerCase(),trang_thai:(row.trang_thai||row['trạng thái']||'online').toLowerCase(),mo_ta:row.mo_ta||row['mô tả']||'',ket_noi:row.ket_noi||row['kết nối']||''};
-      if(!DB.stations.find(x=>x.id===s.id)) DB.stations.push(s);
+      const s={
+        id:       row.id||row['mã trạm']||'',
+        ten:      row.ten||row['tên trạm']||row.id||'',
+        dia_chi:  row.dia_chi||row['địa chỉ']||'',
+        loai:     (row.loai||row['loại']||'access').toLowerCase().trim(),
+        trang_thai:(row.trang_thai||row['trạng thái']||'online').toLowerCase().trim(),
+        mo_ta:    row.mo_ta||row['mô tả']||'',
+        ket_noi:  row.ket_noi||row['kết nối']||'',
+        lat:      parseFloat(row.lat||row['vĩ độ']||'')||null,
+        lng:      parseFloat(row.lng||row['kinh độ']||'')||null,
+      };
+      if(!s.id){skipped++;return;}
+      if(DB.stations.find(x=>x.id===s.id)){skipped++;return;}
+      DB.stations.push(s);
+      added++;
     });
     renderSB(DB.stations); updateStats(); renderWelcome();
     closeModal('importModal'); saveToLocal();
-    toast('✅ Import thành công '+imported.length+' trạm');
+    toast(`✅ Import ${added} trạm thành công${skipped?` (bỏ qua ${skipped} trùng/lỗi)`:''}`);;
   };
   reader.readAsText(file,'UTF-8');
 }
 
 function downloadTemplate() {
-  const csv='id,ten,dia_chi,loai,trang_thai,mo_ta,ket_noi\nHN-CORE-01,Trạm Core HN,5 Trần Hưng Đạo Hà Nội,core,online,Trạm lõi kết nối backbone,HN-DIST-01\nHN-DIST-01,Trạm Dist Q1,78 Bà Triệu Hà Nội,dist,online,,HN-CORE-01\nHN-ACC-01,Trạm Access PA,Phường A Q1,access,online,,HN-DIST-01';
+  const csv='id,ten,dia_chi,loai,trang_thai,mo_ta,ket_noi,lat,lng\nHN-CORE-01,Trạm Core HN,5 Trần Hưng Đạo Hà Nội,core,online,Trạm lõi kết nối backbone,HN-DIST-01,21.028511,105.852136\nHN-DIST-01,Trạm Dist Q1,78 Bà Triệu Hà Nội,dist,online,,HN-CORE-01,21.015234,105.847890\nHN-ACC-01,Trạm Access PA,Phường A Q1,access,online,,HN-DIST-01,21.011567,105.850123';
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='ttvtchuse_net-template.csv'; a.click();
