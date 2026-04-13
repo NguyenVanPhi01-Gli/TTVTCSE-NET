@@ -269,7 +269,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
       <div class="tab" onclick="switchTab('labels',this)">🏷 Nhãn & Ký hiệu</div>
     </div>
     <!-- MAP BAR (global, always visible) -->
-    <div id="mapGlobalBar" style="display:none;border-bottom:1px solid var(--border);background:var(--surface);padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div id="mapGlobalBar" style="display:none;border-bottom:1px solid var(--border);background:var(--surface);padding:6px 16px;align-items:center;gap:10px;flex-shrink:0">
       <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim)">🗺 BẢN ĐỒ TOÀN MẠNG</span>
       <button class="act-btn ab-gray" style="font-size:10px" onclick="closeMapPanel()">✕ Đóng</button>
     </div>
@@ -1814,159 +1814,163 @@ let mapInstance = null;
 let mapMarkers = [];
 
 function showMapPanel() {
-  // Hide detail/welcome, show map panel
   const content = document.getElementById('mainContent');
   const mapPanel = document.getElementById('mapPanel');
-  const mapBar = document.getElementById('mapGlobalBar');
+  const mapBar   = document.getElementById('mapGlobalBar');
+  const tabBar   = document.getElementById('tabBar');
+
   content.style.display = 'none';
-  mapBar.style.display = 'flex';
+  if(tabBar) tabBar.style.display = 'none';
+  mapBar.style.display  = 'flex';
   mapPanel.style.display = 'flex';
   mapPanel.style.flexDirection = 'column';
 
-  if (!document.getElementById('mapContainer')) {
-    mapPanel.innerHTML = `
-      <div style="position:relative;flex:1;">
-        <div id="mapContainer"></div>
-        <div class="map-legend">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);margin-bottom:6px;text-transform:uppercase">Chú thích</div>
-          <div class="map-legend-item"><div class="map-legend-dot" style="background:#00ff9d;box-shadow:0 0 6px #00ff9d"></div>Online</div>
-          <div class="map-legend-item"><div class="map-legend-dot" style="background:#ffb800;box-shadow:0 0 6px #ffb800"></div>Cảnh báo</div>
-          <div class="map-legend-item"><div class="map-legend-dot" style="background:#ff4757;box-shadow:0 0 6px #ff4757"></div>Sự cố</div>
-          <div class="map-legend-item"><div class="map-legend-dot" style="background:#64748b"></div>Chưa có tọa độ</div>
-          <hr style="border-color:var(--border);margin:6px 0">
-          <div style="font-size:9px;color:var(--dim)">🔵 Core &nbsp; 🟢 Dist &nbsp; 🟠 Access</div>
-        </div>
-        <div style="position:absolute;top:10px;right:10px;background:rgba(10,14,26,.92);border:1px solid var(--border);border-radius:8px;padding:8px 12px;z-index:1000;display:flex;gap:14px;font-family:'JetBrains Mono',monospace;font-size:10px;">
-          <span style="color:var(--green)">●${DB.stations.filter(s=>s.trang_thai==='online').length} online</span>
-          <span style="color:var(--warn)">▲${DB.stations.filter(s=>s.trang_thai==='warn').length} cảnh báo</span>
-          <span style="color:var(--accent)">📍${DB.stations.filter(s=>s.lat&&s.lng).length}/${DB.stations.length} có tọa độ</span>
-        </div>
-      </div>`;
-  }
+  const on   = DB.stations.filter(s=>s.trang_thai==='online').length;
+  const warn = DB.stations.filter(s=>s.trang_thai==='warn').length;
+  const err  = DB.stations.filter(s=>s.trang_thai==='error').length;
+  const hasCoord = DB.stations.filter(s=>s.lat&&s.lng).length;
+  const noCoord  = DB.stations.filter(s=>!s.lat||!s.lng);
 
-  setTimeout(() => initMap(), 100);
+  // Luôn rebuild để stats mới nhất
+  mapPanel.innerHTML = `
+    <div style="position:relative;flex:1;min-height:0;">
+      <div id="mapContainer" style="width:100%;height:${window.innerHeight-100}px;"></div>
+      <div class="map-legend">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);margin-bottom:6px;text-transform:uppercase">Chú thích</div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:#00ff9d;box-shadow:0 0 6px #00ff9d"></div><span>Online (${on})</span></div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:#ffb800;box-shadow:0 0 6px #ffb800"></div><span>Cảnh báo (${warn})</span></div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:#ff4757;box-shadow:0 0 6px #ff4757"></div><span>Sự cố (${err})</span></div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:#64748b"></div><span>Chưa có tọa độ (${noCoord.length})</span></div>
+        <hr style="border-color:var(--border);margin:6px 0">
+        <div style="font-size:9px;color:var(--dim)">🔵 Core &nbsp;|&nbsp; 🟢 Dist &nbsp;|&nbsp; 🟠 Access</div>
+      </div>
+      <div style="position:absolute;top:10px;right:10px;background:rgba(10,14,26,.92);border:1px solid var(--border);border-radius:8px;padding:8px 14px;z-index:1000;display:flex;gap:16px;font-family:'JetBrains Mono',monospace;font-size:11px;">
+        <span style="color:#00ff9d">● ${on} online</span>
+        <span style="color:#ffb800">▲ ${warn} cảnh báo</span>
+        <span style="color:#ff4757">✕ ${err} sự cố</span>
+        <span style="color:var(--accent)">📍 ${hasCoord}/${DB.stations.length} trạm</span>
+      </div>
+      ${noCoord.length?`<div style="position:absolute;bottom:40px;right:10px;background:rgba(10,14,26,.9);border:1px solid rgba(255,184,0,.3);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:10px;color:#ffb800;z-index:1000;max-width:220px">
+        ⚠ ${noCoord.length} trạm chưa có tọa độ.<br>
+        <span style="color:#64748b;font-size:9px">Nhấn ✏ Sửa trạm để thêm lat/lng</span>
+      </div>`:''}
+    </div>`;
+
+  // Reset map instance vì đã rebuild DOM
+  if(mapInstance) { mapInstance.remove(); mapInstance = null; }
+  setTimeout(() => initMap(), 150);
 }
 
 function closeMapPanel() {
-  const content = document.getElementById('mainContent');
+  const content  = document.getElementById('mainContent');
   const mapPanel = document.getElementById('mapPanel');
-  const mapBar = document.getElementById('mapGlobalBar');
-  content.style.display = 'block';
-  mapBar.style.display = 'none';
+  const mapBar   = document.getElementById('mapGlobalBar');
+  const tabBar   = document.getElementById('tabBar');
+  content.style.display  = 'block';
+  mapBar.style.display   = 'none';
   mapPanel.style.display = 'none';
+  // Hiện lại tabBar nếu đang có trạm được chọn
+  if(currentStnId && tabBar) tabBar.style.display = 'flex';
 }
 
 function initMap() {
   const container = document.getElementById('mapContainer');
-  if (!container) return;
+  if (!container) { console.error('mapContainer not found'); return; }
+  if (typeof L === 'undefined') { setTimeout(initMap, 500); return; }
 
-  // Set height
   container.style.height = (window.innerHeight - 100) + 'px';
 
-  // Find center from stations with coords
-  const withCoords = DB.stations.filter(s => s.lat && s.lng);
-  const centerLat = withCoords.length ? withCoords.reduce((a,s)=>a+s.lat,0)/withCoords.length : 21.028;
-  const centerLng = withCoords.length ? withCoords.reduce((a,s)=>a+s.lng,0)/withCoords.length : 105.804;
+  // Parse lat/lng thành float (tránh lỗi khi import từ CSV → string)
+  const withCoords = DB.stations.filter(s => parseFloat(s.lat) && parseFloat(s.lng));
 
-  if (mapInstance) {
-    mapInstance.remove();
-    mapInstance = null;
+  if (withCoords.length === 0) {
+    container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--bg);color:var(--dim);font-family:'JetBrains Mono',monospace;flex-direction:column;gap:12px">
+      <div style="font-size:32px">📍</div>
+      <div>Chưa có trạm nào có tọa độ</div>
+      <div style="font-size:11px">Vào ✏ Sửa trạm → nhập Vĩ độ / Kinh độ</div>
+    </div>`;
+    return;
   }
+
+  const centerLat = withCoords.reduce((a,s)=>a+parseFloat(s.lat),0)/withCoords.length;
+  const centerLng = withCoords.reduce((a,s)=>a+parseFloat(s.lng),0)/withCoords.length;
+
+  if (mapInstance) { mapInstance.remove(); mapInstance = null; }
 
   mapInstance = L.map('mapContainer', {
     center: [centerLat, centerLng],
-    zoom: withCoords.length > 1 ? 13 : 12,
+    zoom: withCoords.length > 10 ? 11 : withCoords.length > 1 ? 13 : 14,
     zoomControl: true,
   });
 
-  // Dark tile layer
+  // Tile tối
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CartoDB',
     subdomains: 'abcd',
     maxZoom: 20,
   }).addTo(mapInstance);
 
-  // Draw connection lines
+  // Vẽ đường kết nối
   DB.stations.forEach(s => {
-    if (!s.lat || !s.lng || !s.ket_noi) return;
-    const connects = s.ket_noi.split(',').map(c=>c.trim()).filter(Boolean);
-    connects.forEach(cid => {
+    if (!parseFloat(s.lat) || !parseFloat(s.lng) || !s.ket_noi) return;
+    s.ket_noi.split(',').map(c=>c.trim()).filter(Boolean).forEach(cid => {
       const cs = DB.stations.find(x=>x.id===cid);
-      if (cs && cs.lat && cs.lng) {
-        L.polyline([[s.lat, s.lng],[cs.lat, cs.lng]], {
-          color: '#00d4ff', weight: 2, opacity: 0.5, dashArray: '6,4'
+      if (cs && parseFloat(cs.lat) && parseFloat(cs.lng)) {
+        L.polyline([[parseFloat(s.lat), parseFloat(s.lng)],[parseFloat(cs.lat), parseFloat(cs.lng)]], {
+          color:'#00d4ff', weight:2, opacity:0.4, dashArray:'6,4'
         }).addTo(mapInstance);
       }
     });
   });
 
-  // Add markers
+  // Thêm marker
   mapMarkers = [];
   DB.stations.forEach(s => {
-    if (!s.lat || !s.lng) return;
-    const color = s.trang_thai==='online'?'#00ff9d':s.trang_thai==='warn'?'#ffb800':'#ff4757';
-    const ring = s.loai==='core'?'#00d4ff':s.loai==='dist'?'#00ff9d':'#ff6b35';
-    const iconHtml = `<div style="
-      width:${s.loai==='core'?20:s.loai==='dist'?16:13}px;
-      height:${s.loai==='core'?20:s.loai==='dist'?16:13}px;
-      background:${color};
-      border:2px solid ${ring};
-      border-radius:50%;
-      box-shadow:0 0 ${s.loai==='core'?12:8}px ${color};
-      position:relative;
-    "></div>`;
+    const lat = parseFloat(s.lat);
+    const lng = parseFloat(s.lng);
+    if (!lat || !lng) return;
+
+    const tt = (s.trang_thai||'online').toLowerCase();
+    const loai = (s.loai||'access').toLowerCase();
+    const color = tt==='online'?'#00ff9d':tt==='warn'?'#ffb800':'#ff4757';
+    const ring  = loai==='core'?'#00d4ff':loai==='dist'?'#00ff9d':'#ff6b35';
+    const size  = loai==='core'?22:loai==='dist'?16:12;
 
     const icon = L.divIcon({
-      html: iconHtml,
+      html: `<div style="width:${size}px;height:${size}px;background:${color};border:2.5px solid ${ring};border-radius:50%;box-shadow:0 0 ${size/2}px ${color};"></div>`,
       className: '',
-      iconSize: [22,22],
-      iconAnchor: [11,11],
-      popupAnchor: [0,-14],
+      iconSize: [size+4, size+4],
+      iconAnchor: [(size+4)/2, (size+4)/2],
+      popupAnchor: [0, -(size/2+8)],
     });
 
-    const typeLabel = {core:'🏛 CORE',dist:'🔗 DIST',access:'📡 ACCESS'}[s.loai]||s.loai;
+    const typeLabel = {core:'🏛 CORE',dist:'🔗 DIST',access:'📡 ACCESS'}[loai]||loai.toUpperCase();
+    const statusText = tt==='online'?'<span style="color:#00ff9d">● ONLINE</span>':tt==='warn'?'<span style="color:#ffb800">⚠ CẢNH BÁO</span>':'<span style="color:#ff4757">✕ SỰ CỐ</span>';
     const devCount = (DB.devices[s.id]||[]).length;
     const odfCount = (DB.odfs[s.id]||[]).length;
-    const statusText = s.trang_thai==='online'?'<span style="color:#00ff9d">● ONLINE</span>':s.trang_thai==='warn'?'<span style="color:#ffb800">⚠ CẢNH BÁO</span>':'<span style="color:#ff4757">✕ SỰ CỐ</span>';
 
-    const popup = L.popup({
-      maxWidth: 240,
-      className: 'custom-popup',
-    }).setContent(`
-      <div class="map-stn-popup" style="font-family:sans-serif">
-        <h4 style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff;margin:0 0 4px">${s.id}</h4>
-        <p style="font-size:10px;color:#64748b;margin:0 0 2px">${typeLabel} — ${statusText}</p>
-        <p style="font-size:10px;color:#64748b;margin:0 0 2px">📍 ${s.dia_chi||''}</p>
-        <p style="font-size:10px;color:#64748b;margin:0 0 4px">📦 ${devCount} thiết bị &nbsp; 🔌 ${odfCount} ODF</p>
-        ${s.mo_ta?`<p style="font-size:10px;color:#ff6b35;margin:0 0 4px">${s.mo_ta}</p>`:''}
-        <p style="font-size:9px;color:#334155;margin:0">📌 ${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}</p>
-        <button onclick="closeMapPanel();selectStn('${s.id}')" style="margin-top:8px;padding:4px 10px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:4px;color:#00d4ff;font-size:10px;font-family:monospace;font-weight:700;cursor:pointer;width:100%">🔍 Xem chi tiết trạm</button>
+    const popup = L.popup({maxWidth:240}).setContent(`
+      <div style="font-family:sans-serif;min-width:190px">
+        <div style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff;margin:0 0 4px">${s.id}</div>
+        <div style="font-size:11px;color:#64748b;margin:0 0 2px">${s.ten||''}</div>
+        <div style="font-size:10px;margin:0 0 2px">${typeLabel} — ${statusText}</div>
+        <div style="font-size:10px;color:#64748b;margin:0 0 2px">📍 ${s.dia_chi||''}</div>
+        ${devCount||odfCount?`<div style="font-size:10px;color:#64748b;margin:0 0 4px">📦 ${devCount} thiết bị &nbsp;🔌 ${odfCount} ODF</div>`:''}
+        ${s.mo_ta?`<div style="font-size:10px;color:#ff6b35;margin:0 0 4px">${s.mo_ta}</div>`:''}
+        <div style="font-size:9px;color:#334155;margin:0 0 6px">📌 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+        <button onclick="closeMapPanel();selectStn('${s.id}')" style="width:100%;padding:5px 10px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:4px;color:#00d4ff;font-size:11px;font-family:monospace;font-weight:700;cursor:pointer;">🔍 Xem chi tiết trạm</button>
       </div>`);
 
-    const marker = L.marker([s.lat, s.lng], {icon}).addTo(mapInstance).bindPopup(popup);
+    const marker = L.marker([lat, lng], {icon}).addTo(mapInstance).bindPopup(popup);
     mapMarkers.push({id:s.id, marker});
   });
 
-  // Show stations without coords as warning
-  const noCoord = DB.stations.filter(s=>!s.lat||!s.lng);
-  if (noCoord.length > 0) {
-    const warn = L.control({position:'bottomright'});
-    warn.onAdd = function() {
-      const div = L.DomUtil.create('div');
-      div.innerHTML = `<div style="background:rgba(10,14,26,.9);border:1px solid rgba(255,184,0,.3);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:10px;color:#ffb800;max-width:200px">
-        ⚠ ${noCoord.length} trạm chưa có tọa độ:<br>
-        ${noCoord.map(s=>`<span style="color:#94a3b8">${s.id}</span>`).join(', ')}<br>
-        <span style="color:#64748b;font-size:9px">Nhấn ✏ Sửa trạm để thêm tọa độ</span>
-      </div>`;
-      return div;
-    };
-    warn.addTo(mapInstance);
-  }
-
-  // Fit bounds if multiple stations
+  // Fit bounds
   if (withCoords.length > 1) {
-    const bounds = L.latLngBounds(withCoords.map(s=>[s.lat,s.lng]));
-    mapInstance.fitBounds(bounds, {padding:[40,40]});
+    try {
+      const bounds = L.latLngBounds(withCoords.map(s=>[parseFloat(s.lat), parseFloat(s.lng)]));
+      mapInstance.fitBounds(bounds, {padding:[50,50]});
+    } catch(e) {}
   }
 }
 
