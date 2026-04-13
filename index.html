@@ -237,10 +237,11 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
   <div class="hdr-right">
     <button class="hdr-btn hdr-btn-green" onclick="openModal('station')">＋ Thêm trạm</button>
     <button class="hdr-btn" style="background:rgba(0,255,157,.12);border-color:rgba(0,255,157,.4);color:var(--green)" onclick="showMapPanel()">🗺 Bản đồ</button>
-    <button class="hdr-btn hdr-btn-blue" onclick="exportData()">↓ Xuất Excel</button>
+    <button class="hdr-btn hdr-btn-blue" onclick="exportData()">↓ Backup</button>
     <button class="hdr-btn hdr-btn-gray" onclick="importExcel()">↑ Import</button>
     <button class="hdr-btn hdr-btn-gray" onclick="showPublishGuide()">🌐 Publish</button>
-    <button class="hdr-btn hdr-btn-gray" onclick="showHelp()">? Trợ giúp</button>
+    <button class="hdr-btn" style="background:rgba(255,71,87,.08);border-color:rgba(255,71,87,.3);color:var(--red)" onclick="resetFirebaseData()" title="Xoá toàn bộ và load demo">⚠ Reset</button>
+    <button class="hdr-btn hdr-btn-gray" onclick="showHelp()">? Help</button>
   </div>
 </header>
 
@@ -564,6 +565,69 @@ header{background:var(--surface);border-bottom:1px solid var(--border);height:50
 <!-- LEAFLET MAP -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove, update }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAbZVGJfAZyHAWV0w8zV70Hcv1cYDrSuuU",
+    authDomain: "ttvtcse-net.firebaseapp.com",
+    databaseURL: "https://ttvtcse-net-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ttvtcse-net",
+    storageBucket: "ttvtcse-net.firebasestorage.app",
+    messagingSenderId: "410064430986",
+    appId: "1:410064430986:web:9e82ad381bd2e98a220a73",
+    measurementId: "G-03X85LXN6D"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db    = getDatabase(fbApp);
+
+  // ── Expose Firebase helpers to global scope ──
+  window._fb = { db, ref, set, onValue, remove, update };
+
+  // ── Listen realtime: mỗi khi DB thay đổi → cập nhật UI ──
+  onValue(ref(db, 'ttvtchuse'), (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      // Firebase trống → load demo
+      if (typeof initDemo === 'function') initDemo();
+    } else {
+      // Merge dữ liệu từ Firebase vào DB local
+      window.DB = {
+        stations: data.stations ? Object.values(data.stations) : [],
+        devices:  data.devices  || {},
+        odfs:     data.odfs     || {},
+        fibers:   data.fibers   || {},
+        cables:   data.cables   || {},
+        power:    data.power    || {},
+        labels:   data.labels   || {},
+      };
+    }
+    // Refresh UI
+    if (typeof renderSB === 'function') {
+      renderSB(window.DB.stations);
+      updateStats();
+      if (window.currentStnId) renderTab();
+      else renderWelcome();
+    }
+    // Cập nhật trạng thái kết nối
+    const srcEl = document.getElementById('hdrSrc');
+    if (srcEl) srcEl.innerHTML = '🔴<span style="color:#00ff9d">● Firebase realtime</span>';
+  }, (error) => {
+    console.error('Firebase error:', error);
+    const srcEl = document.getElementById('hdrSrc');
+    if (srcEl) srcEl.innerHTML = '<span style="color:#ff4757">⚠ Firebase lỗi — dùng local</span>';
+    // Fallback localStorage
+    if (typeof loadFromLocal === 'function') {
+      const ok = loadFromLocal();
+      if (!ok && typeof initDemo === 'function') initDemo();
+    }
+  });
+</script>
 
 <!-- PUBLISH MODAL -->
 <div class="overlay" id="publishModal">
@@ -1562,21 +1626,63 @@ function exportData() {
   toast('✅ Đã xuất file backup JSON');
 }
 
+function resetFirebaseData() {
+  if(!confirm('⚠️ XOÁ TOÀN BỘ dữ liệu Firebase và load lại dữ liệu demo?\nThao tác này không thể hoàn tác!')) return;
+  if(!window._fb){toast('⚠ Firebase chưa kết nối');return;}
+  const {db,ref,set}=window._fb;
+  initDemo();
+  const stationsObj={};
+  DB.stations.forEach(s=>{stationsObj[s.id]=s;});
+  set(ref(db,'ttvtchuse'),{
+    stations:stationsObj,devices:DB.devices,odfs:DB.odfs,
+    fibers:DB.fibers,cables:DB.cables,power:DB.power,labels:DB.labels,
+    _updated:new Date().toISOString(),
+  }).then(()=>toast('✅ Đã reset dữ liệu demo lên Firebase'));
+}
+
 function showHelp() {
   alert('📖 TTVTCHUSE_NET v3 — Hướng dẫn nhanh\n\n1. Click trạm bên trái để xem chi tiết\n2. Mỗi tab (Thiết bị / ODF / Cáp / Nguồn / Nhãn) có nút "＋ Thêm"\n3. Click vào ô ODF để sửa từng cổng sợi quang\n4. Nút "⚡ Tạo nhanh" để tạo tất cả cổng ODF cùng lúc\n5. "↓ Xuất Excel" để backup dữ liệu\n6. Dữ liệu tự lưu vào trình duyệt (localStorage)');
 }
 
 // ══════════════════════════════
-// LOCAL STORAGE
+// FIREBASE SAVE (thay localStorage)
 // ══════════════════════════════
 function saveToLocal() {
-  try { localStorage.setItem('ttvtchuse_net_v3',JSON.stringify(DB)); } catch(e){}
+  // Vẫn lưu local làm backup
+  try { localStorage.setItem('ttvtchuse_net_v3', JSON.stringify(DB)); } catch(e) {}
+  // Lưu lên Firebase
+  saveToFirebase();
 }
+
+function saveToFirebase() {
+  if (!window._fb) return; // Firebase chưa load
+  const { db, ref, set } = window._fb;
+  // Chuyển stations array → object để Firebase lưu đẹp hơn
+  const stationsObj = {};
+  DB.stations.forEach(s => { stationsObj[s.id] = s; });
+  set(ref(db, 'ttvtchuse'), {
+    stations: stationsObj,
+    devices:  DB.devices  || {},
+    odfs:     DB.odfs     || {},
+    fibers:   DB.fibers   || {},
+    cables:   DB.cables   || {},
+    power:    DB.power    || {},
+    labels:   DB.labels   || {},
+    _updated: new Date().toISOString(),
+    _updatedBy: navigator.userAgent.substring(0,50),
+  }).then(() => {
+    // toast nhẹ — không cần hiện mỗi lần
+  }).catch(err => {
+    console.error('Firebase save error:', err);
+    toast('⚠ Lưu Firebase thất bại — đã lưu local backup');
+  });
+}
+
 function loadFromLocal() {
   try {
-    const d=localStorage.getItem('ttvtchuse_net_v3');
-    if(d) { DB=JSON.parse(d); return true; }
-  } catch(e){}
+    const d = localStorage.getItem('ttvtchuse_net_v3');
+    if (d) { DB = JSON.parse(d); return true; }
+  } catch(e) {}
   return false;
 }
 
@@ -1775,12 +1881,12 @@ function showPublishGuide() {
 
 // ══════════════════════════════
 window.onload=()=>{
-  const hasLocal=loadFromLocal();
-  if(!hasLocal) initDemo();
+  // Firebase listener đã được setup trong <script type="module">
+  // Khởi tạo UI trước, Firebase sẽ push data vào sau
   renderSB(DB.stations);
   updateStats();
   renderWelcome();
-  document.getElementById('hdrSrc').textContent=hasLocal?'💾 Dữ liệu đã lưu':'📋 Dữ liệu demo';
+  document.getElementById('hdrSrc').innerHTML = '⏳ <span style="color:var(--dim)">Đang kết nối Firebase...</span>';
 };
 </script>
 </body>
