@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTVTCHUSE_NET v3 — Quản lý hạ tầng đầy đủ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap');
+:root {
+  --bg:#0a0e1a; --surface:#111827; --surface2:#1a2235; --border:#1e2d45;
+  --accent:#00d4ff; --accent2:#00ff9d; --accent3:#ff6b35; --warn:#ffb800;
+  --text:#e2e8f0; --dim:#64748b; --mid:#94a3b8;
+  --green:#00ff9d; --red:#ff4757; --blue:#00d4ff; --orange:#ff6b35;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;overflow:hidden;}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:200;}
+.logo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--accent);letter-spacing:2px;}
+.logo span{color:var(--accent2);}
+.hdr-right{display:flex;gap:8px;align-items:center;}
+.hdr-btn{padding:4px 10px;border-radius:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.hdr-btn-green{background:rgba(0,255,157,.1);border-color:rgba(0,255,157,.35);color:var(--green);}
+.hdr-btn-green:hover{background:rgba(0,255,157,.2);}
+.hdr-btn-blue{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.35);color:var(--accent);}
+.hdr-btn-gray{background:transparent;border-color:var(--border);color:var(--dim);}
+.hdr-stats{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);display:flex;gap:10px;}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 50px);}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.sb-search{padding:10px;border-bottom:1px solid var(--border);}
+.sb-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 9px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;}
+.sb-input:focus{border-color:var(--accent);}
+.sb-input::placeholder{color:var(--dim);}
+.sb-section{padding:8px 10px 3px;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--dim);text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:flex;justify-content:space-between;align-items:center;}
+.sb-add{cursor:pointer;color:var(--accent2);font-size:14px;line-height:1;}
+.sb-list{flex:1;overflow-y:auto;padding:3px 6px;}
+.sb-list::-webkit-scrollbar{width:3px;}
+.sb-list::-webkit-scrollbar-thumb{background:var(--border);}
+.sb-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:7px;cursor:pointer;transition:all .12s;margin-bottom:1px;border:1px solid transparent;}
+.sb-item:hover{background:var(--surface2);}
+.sb-item.active{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.22);}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot.online{background:var(--green);box-shadow:0 0 5px var(--green);}
+.dot.warn{background:var(--warn);box-shadow:0 0 5px var(--warn);}
+.dot.error{background:var(--red);box-shadow:0 0 5px var(--red);}
+.dot.unknown{background:var(--dim);}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-sub{font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.sb-badge{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.bc{background:rgba(0,212,255,.15);color:var(--accent);border:1px solid rgba(0,212,255,.3);}
+.bd{background:rgba(0,255,157,.12);color:var(--green);border:1px solid rgba(0,255,157,.3);}
+.ba{background:rgba(255,107,53,.12);color:var(--orange);border:1px solid rgba(255,107,53,.3);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto;flex-shrink:0;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 14px;font-size:11px;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.content{flex:1;overflow-y:auto;padding:16px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:14px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.card-title{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--dim);text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:5px;}
+.card-title::before{content:'';width:2px;height:10px;background:var(--accent);border-radius:1px;}
+.card-actions{display:flex;gap:6px;}
+.act-btn{padding:3px 9px;border-radius:4px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.ab-green{background:rgba(0,255,157,.1);border-color:rgba(0,255,157,.3);color:var(--green);}
+.ab-blue{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent);}
+.ab-red{background:rgba(255,71,87,.1);border-color:rgba(255,71,87,.3);color:var(--red);}
+.ab-gray{background:transparent;border-color:var(--border);color:var(--dim);}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+
+/* STAT */
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;text-align:center;}
+.stat-v{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;}
+.stat-l{font-size:10px;color:var(--dim);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.tbl th{text-align:left;padding:7px 10px;font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);text-transform:uppercase;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid rgba(30,45,69,.4);font-family:'JetBrains Mono',monospace;color:var(--mid);}
+.tbl tr:hover td{background:rgba(0,212,255,.02);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl td.id-col{color:var(--accent);font-weight:700;}
+.tbl td.seri-col{color:var(--accent2);font-size:10px;}
+.tbl td.label-col{color:var(--warn);font-weight:600;}
+
+/* TAGS */
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;}
+.tok{background:rgba(0,255,157,.12);color:var(--green);border:1px solid rgba(0,255,157,.3);}
+.twarn{background:rgba(255,184,0,.12);color:var(--warn);border:1px solid rgba(255,184,0,.3);}
+.terr{background:rgba(255,71,87,.12);color:var(--red);border:1px solid rgba(255,71,87,.3);}
+.tna{background:rgba(100,116,139,.1);color:var(--dim);border:1px solid var(--border);}
+.tused{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.3);}
+
+/* ODF VISUAL */
+.odf-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:12px;background:var(--bg);border-radius:6px;}
+.odf-port-cell{
+  aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
+  cursor:pointer;transition:all .15s;border:1px solid;
+}
+.odf-port-cell:hover{transform:scale(1.1);z-index:2;}
+.odf-used{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);}
+.odf-free{background:rgba(30,45,69,.6);border-color:var(--border);color:var(--dim);}
+.odf-fault{background:rgba(255,71,87,.2);border-color:var(--red);color:var(--red);}
+
+/* FIBER ROW */
+.fiber-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:var(--bg);margin-bottom:4px;border:1px solid var(--border);cursor:pointer;transition:all .12s;}
+.fiber-row:hover{border-color:var(--accent);background:rgba(0,212,255,.03);}
+.fiber-color{width:20px;height:20px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+.fiber-info{flex:1;min-width:0;}
+.fiber-label{font-size:11px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;}
+.fiber-detail{font-size:10px;color:var(--dim);margin-top:1px;}
+.fiber-dest{font-size:10px;color:var(--accent2);font-family:'JetBrains Mono',monospace;}
+
+/* POWER CHAIN */
+.pchain{display:flex;align-items:stretch;overflow-x:auto;padding:8px 0;gap:0;}
+.pnode{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;text-align:center;min-width:110px;flex-shrink:0;}
+.pnode-lbl{font-size:8px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;}
+.pnode-name{font-size:11px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;}
+.pnode-val{font-size:10px;color:var(--orange);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.pnode-seri{font-size:9px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.parrow{width:26px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;flex-shrink:0;}
+
+/* CABLE ROW */
+.cable-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;background:var(--bg);margin-bottom:5px;border:1px solid var(--border);cursor:pointer;transition:all .12s;}
+.cable-row:hover{border-color:var(--accent);}
+.cable-line{width:32px;height:5px;border-radius:2px;flex-shrink:0;}
+.cable-info{flex:1;min-width:0;}
+.cable-lbl{font-size:11px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;}
+.cable-detail{font-size:10px;color:var(--dim);margin-top:1px;}
+
+/* STNHDR */
+.stnhdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.stnicon{width:40px;height:40px;background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,255,157,.1));border:1px solid rgba(0,212,255,.3);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.stntitle h1{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);}
+.stntitle p{font-size:11px;color:var(--dim);margin-top:2px;}
+.spill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:15px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.spill.online{background:rgba(0,255,157,.1);border:1px solid rgba(0,255,157,.35);color:var(--green);}
+.spill.warn{background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.35);color:var(--warn);}
+.spill.error{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.35);color:var(--red);}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;}
+.modal::-webkit-scrollbar{width:3px;}
+.modal::-webkit-scrollbar-thumb{background:var(--border);}
+.modal h3{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--accent);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.fg{margin-bottom:12px;}
+.fl{font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--mid);font-family:'JetBrains Mono',monospace;margin-bottom:5px;display:block;text-transform:uppercase;}
+.fi,.fs,.fta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;transition:border-color .15s;}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--accent);}
+.fs option{background:var(--surface);}
+.fta{resize:vertical;min-height:60px;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-btns{display:flex;gap:8px;margin-top:16px;}
+.mbc{flex:1;padding:8px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;}
+.mbs{flex:2;padding:8px;background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,255,157,.15));border:1px solid rgba(0,212,255,.4);border-radius:7px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;}
+.mbs:hover{background:linear-gradient(135deg,rgba(0,212,255,.3),rgba(0,255,157,.2));}
+
+/* WELCOME */
+.welcome-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+.wcard{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;}
+.wcard:hover{border-color:var(--accent);transform:translateY(-2px);}
+.wcard-icon{font-size:26px;margin-bottom:8px;}
+.wcard h3{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);margin-bottom:4px;}
+.wcard p{font-size:10px;color:var(--dim);line-height:1.5;}
+
+/* TOPO SVG */
+.topo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:14px;}
+
+/* COLOR PICKER STRIP */
+.color-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.cswatch{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all .12s;}
+.cswatch:hover,.cswatch.sel{border-color:#fff;transform:scale(1.15);}
+
+/* IMPORT AREA */
+.import-area{border:2px dashed var(--border);border-radius:9px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;}
+.import-area:hover{border-color:var(--accent);background:rgba(0,212,255,.03);}
+.import-area p{font-size:12px;color:var(--dim);margin-top:8px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);z-index:999;transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+
+/* FIBER TUBE */
+.tube-row{display:flex;gap:4px;margin-bottom:6px;align-items:center;}
+.tube-label{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;width:60px;flex-shrink:0;}
+.fiber-dot{width:18px;height:18px;border-radius:50%;cursor:pointer;transition:all .12s;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:7px;color:#000;font-weight:700;}
+.fiber-dot:hover{transform:scale(1.15);}
+/* MAP */
+#mapContainer{width:100%;height:100%;}
+.map-legend{position:absolute;bottom:16px;left:16px;background:rgba(10,14,26,.92);border:1px solid var(--border);border-radius:8px;padding:10px 14px;z-index:1000;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-mid);}
+.map-legend-item{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.map-legend-dot{width:9px;height:9px;border-radius:50%;}
+.map-stn-popup{font-family:'Sora',sans-serif;min-width:190px;}
+.map-stn-popup h4{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff;margin-bottom:3px;}
+.map-stn-popup p{font-size:11px;color:#64748b;margin-bottom:2px;}
+/* PUBLISH MODAL */
+.pub-step{display:flex;gap:12px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.pub-num{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:#000;flex-shrink:0;}
+.pub-body h4{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.pub-body p{font-size:11px;color:var(--dim);line-height:1.7;}
+.pub-body code{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:3px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);word-break:break-all;}
+.pub-option{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.pub-option h4{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.pub-option p{font-size:10px;color:var(--dim);line-height:1.6;}
+.pub-free{color:var(--green);font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(0,255,157,.12);border:1px solid rgba(0,255,157,.3);}
+.pub-paid{color:var(--warn);font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.3);}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo">TTVTCHUSE<span>_NET</span> <span style="font-size:10px;color:var(--dim)">v3.0</span></div>
+    <span id="hdrSrc" style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace"></span>
+  </div>
+  <div class="hdr-stats" id="hdrStats"></div>
+  <div class="hdr-right">
+    <button class="hdr-btn hdr-btn-green" onclick="openModal('station')">＋ Thêm trạm</button>
+    <button class="hdr-btn" style="background:rgba(0,255,157,.12);border-color:rgba(0,255,157,.4);color:var(--green)" onclick="showMapPanel()">🗺 Bản đồ</button>
+    <button class="hdr-btn hdr-btn-blue" onclick="exportData()">↓ Xuất Excel</button>
+    <button class="hdr-btn hdr-btn-gray" onclick="importExcel()">↑ Import</button>
+    <button class="hdr-btn hdr-btn-gray" onclick="showPublishGuide()">🌐 Publish</button>
+    <button class="hdr-btn hdr-btn-gray" onclick="showHelp()">? Trợ giúp</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-search">
+      <input class="sb-input" placeholder="🔍 Tìm trạm, thiết bị, seri..." oninput="filterSB(this.value)" id="sbSearch">
+    </div>
+    <div class="sb-section">
+      Nhà trạm
+      <span class="sb-add" onclick="openModal('station')" title="Thêm trạm">＋</span>
+    </div>
+    <div class="sb-list" id="sbList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="tabs" id="tabBar" style="display:none">
+      <div class="tab active" onclick="switchTab('overview',this)">📊 Tổng quan</div>
+      <div class="tab" onclick="switchTab('devices',this)">📦 Thiết bị</div>
+      <div class="tab" onclick="switchTab('odf',this)">🔌 ODF & Sợi quang</div>
+      <div class="tab" onclick="switchTab('cable',this)">🔶 Tuyến cáp</div>
+      <div class="tab" onclick="switchTab('power',this)">⚡ Nguồn điện</div>
+      <div class="tab" onclick="switchTab('labels',this)">🏷 Nhãn & Ký hiệu</div>
+    </div>
+    <!-- MAP BAR (global, always visible) -->
+    <div id="mapGlobalBar" style="display:none;border-bottom:1px solid var(--border);background:var(--surface);padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim)">🗺 BẢN ĐỒ TOÀN MẠNG</span>
+      <button class="act-btn ab-gray" style="font-size:10px" onclick="closeMapPanel()">✕ Đóng</button>
+    </div>
+    <div id="mapPanel" style="display:none;flex:1;min-height:0;position:relative;"></div>
+    <div class="content" id="mainContent">
+      <div id="welcomeDiv"></div>
+      <div id="detailDiv" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+<!-- STATION MODAL -->
+<div class="overlay" id="stationModal">
+<div class="modal">
+  <h3 id="stationModalTitle">🏛 Thêm / Sửa nhà trạm</h3>
+  <input type="hidden" id="sm_editId">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Mã trạm *</label><input class="fi" id="sm_id" placeholder="HN-CORE-01"></div>
+    <div class="fg"><label class="fl">Loại trạm *</label>
+      <select class="fs" id="sm_type"><option value="core">Core (Lõi)</option><option value="dist">Distribution (Phân phối)</option><option value="access">Access (Truy nhập)</option></select>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Tên trạm</label><input class="fi" id="sm_name" placeholder="Trạm Core Hoàn Kiếm"></div>
+  <div class="fg"><label class="fl">Địa chỉ</label><input class="fi" id="sm_addr" placeholder="5 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội"></div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Trạng thái</label>
+      <select class="fs" id="sm_status"><option value="online">Online</option><option value="warn">Cảnh báo</option><option value="error">Sự cố</option></select>
+    </div>
+    <div class="fg"><label class="fl">Kết nối đến (ID, phẩy)</label><input class="fi" id="sm_conn" placeholder="HN-DIST-01,HN-DIST-02"></div>
+  </div>
+  <div class="fg"><label class="fl">Mô tả / Ghi chú</label><textarea class="fta" id="sm_desc" placeholder="Ghi chú về trạm..."></textarea></div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Vĩ độ (Latitude) *</label><input class="fi" id="sm_lat" placeholder="21.028511" type="number" step="0.000001"></div>
+    <div class="fg"><label class="fl">Kinh độ (Longitude) *</label><input class="fi" id="sm_lng" placeholder="105.804817" type="number" step="0.000001"></div>
+  </div>
+  <div style="padding:8px 10px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:6px;font-size:10px;color:var(--dim);margin-bottom:10px">
+    💡 Cách lấy tọa độ: Mở <strong style="color:var(--accent)">Google Maps</strong> → Click phải vào vị trí trạm → Copy tọa độ (VD: 21.028511, 105.804817)
+    <br>Hoặc nhấn nút bên dưới để mở Google Maps chọn vị trí:
+    <br><a onclick="openGoogleMapsForCoord()" style="color:var(--accent2);cursor:pointer;text-decoration:underline">🗺 Mở Google Maps để lấy tọa độ</a>
+  </div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('stationModal')">Huỷ</button>
+    <button class="mbs" onclick="saveStation()">💾 LƯU TRẠM</button>
+  </div>
+</div>
+</div>
+
+<!-- DEVICE MODAL -->
+<div class="overlay" id="deviceModal">
+<div class="modal">
+  <h3>📦 Thêm / Sửa thiết bị</h3>
+  <input type="hidden" id="dm_editIdx">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Ký hiệu thiết bị *</label><input class="fi" id="dm_id" placeholder="OLT-CORE-01"></div>
+    <div class="fg"><label class="fl">Loại</label>
+      <select class="fs" id="dm_type">
+        <option>OLT</option><option>Switch</option><option>Router</option>
+        <option>UPS</option><option>ODF</option><option>Rectifier</option>
+        <option>Battery</option><option>Server</option><option>Khác</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Model / Hãng</label><input class="fi" id="dm_model" placeholder="ZTE C650 / Huawei MA5608T"></div>
+    <div class="fg"><label class="fl">Serial Number *</label><input class="fi" id="dm_seri" placeholder="SN20240101001"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Vị trí lắp đặt</label><input class="fi" id="dm_slot" placeholder="Rack 1 - U3, Tủ ODF-1..."></div>
+    <div class="fg"><label class="fl">Trạng thái</label>
+      <select class="fs" id="dm_status"><option value="ok">Tốt</option><option value="warn">Cảnh báo</option><option value="error">Sự cố</option></select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Thông số / Cổng</label><input class="fi" id="dm_ports" placeholder="128 port GPON / 48x10G..."></div>
+    <div class="fg"><label class="fl">Năm lắp đặt</label><input class="fi" id="dm_year" placeholder="2023" type="number"></div>
+  </div>
+  <div class="fg"><label class="fl">Ghi chú</label><textarea class="fta" id="dm_note" placeholder="Ghi chú thêm..."></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('deviceModal')">Huỷ</button>
+    <button class="mbs" onclick="saveDevice()">💾 LƯU THIẾT BỊ</button>
+  </div>
+</div>
+</div>
+
+<!-- ODF MODAL -->
+<div class="overlay" id="odfModal">
+<div class="modal">
+  <h3>🔌 Thêm / Sửa ODF</h3>
+  <input type="hidden" id="om_editIdx">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Ký hiệu ODF *</label><input class="fi" id="om_id" placeholder="ODF-01"></div>
+    <div class="fg"><label class="fl">Model</label><input class="fi" id="om_model" placeholder="ODF 144FO Commscope"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Tổng số port</label><input class="fi" id="om_total" placeholder="144" type="number"></div>
+    <div class="fg"><label class="fl">Loại đầu nối</label>
+      <select class="fs" id="om_conn"><option>LC/UPC</option><option>SC/UPC</option><option>LC/APC</option><option>SC/APC</option><option>FC/UPC</option></select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Vị trí trong trạm</label><input class="fi" id="om_slot" placeholder="Tủ ODF số 1, cạnh Rack..."></div>
+    <div class="fg"><label class="fl">Serial Number</label><input class="fi" id="om_seri" placeholder="ODF-SN-001"></div>
+  </div>
+  <div class="fg"><label class="fl">Ghi chú</label><textarea class="fta" id="om_note"></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('odfModal')">Huỷ</button>
+    <button class="mbs" onclick="saveODF()">💾 LƯU ODF</button>
+  </div>
+</div>
+</div>
+
+<!-- FIBER PORT MODAL -->
+<div class="overlay" id="fiberModal">
+<div class="modal">
+  <h3>🔵 Thêm / Sửa cổng sợi quang</h3>
+  <input type="hidden" id="fm_editIdx">
+  <input type="hidden" id="fm_odfId">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Số port *</label><input class="fi" id="fm_port" placeholder="01" type="number"></div>
+    <div class="fg"><label class="fl">Trạng thái</label>
+      <select class="fs" id="fm_status"><option value="used">Đã đấu</option><option value="free">Trống</option><option value="fault">Lỗi/Hỏng</option></select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Loại sợi</label>
+      <select class="fs" id="fm_fiber"><option>SM-G652D</option><option>SM-G657A</option><option>MM-OM3</option><option>MM-OM4</option></select>
+    </div>
+    <div class="fg"><label class="fl">Nhãn / Ký hiệu dây nhảy</label><input class="fi" id="fm_label" placeholder="JMP-01-CORE → DIST"></div>
+  </div>
+  <div class="fg"><label class="fl">Điểm đầu (đấu từ)</label><input class="fi" id="fm_from" placeholder="ODF-CORE-01 / Port 01"></div>
+  <div class="fg"><label class="fl">Điểm cuối (đấu đến)</label><input class="fi" id="fm_to" placeholder="HN-DIST-01 / ODF-D01 / Port 01"></div>
+  <div class="fg"><label class="fl">Màu sợi</label>
+    <div class="color-strip" id="fiberColorStrip"></div>
+    <input type="hidden" id="fm_color" value="#00d4ff">
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Ống / Tube số</label><input class="fi" id="fm_tube" placeholder="Tube 1 (xanh)"></div>
+    <div class="fg"><label class="fl">Thứ tự sợi trong ống</label><input class="fi" id="fm_pos" placeholder="Sợi 1" type="number"></div>
+  </div>
+  <div class="fg"><label class="fl">Ghi chú</label><textarea class="fta" id="fm_note"></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('fiberModal')">Huỷ</button>
+    <button class="mbs" onclick="saveFiber()">💾 LƯU CỔNG</button>
+  </div>
+</div>
+</div>
+
+<!-- CABLE MODAL -->
+<div class="overlay" id="cableModal">
+<div class="modal">
+  <h3>🔶 Thêm / Sửa tuyến cáp</h3>
+  <input type="hidden" id="cm_editIdx">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Mã tuyến cáp *</label><input class="fi" id="cm_id" placeholder="CAP-001"></div>
+    <div class="fg"><label class="fl">Màu hiển thị</label>
+      <div class="color-strip" id="cableColorStrip"></div>
+      <input type="hidden" id="cm_color" value="#00d4ff">
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Từ trạm *</label><input class="fi" id="cm_from" placeholder="HN-CORE-01"></div>
+    <div class="fg"><label class="fl">Đến trạm *</label><input class="fi" id="cm_to" placeholder="HN-DIST-01"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Loại cáp</label>
+      <select class="fs" id="cm_type"><option>Cáp quang SM-G652D</option><option>Cáp quang SM-G657A</option><option>Cáp đồng</option><option>Cáp quang MM</option></select>
+    </div>
+    <div class="fg"><label class="fl">Số sợi</label><input class="fi" id="cm_fibers" placeholder="24" type="number"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Chiều dài (km)</label><input class="fi" id="cm_length" placeholder="2.3" type="number" step="0.1"></div>
+    <div class="fg"><label class="fl">Hình thức đi cáp</label>
+      <select class="fs" id="cm_route"><option>Cống bể ngầm</option><option>Treo cột điện</option><option>Treo cột riêng</option><option>Trong tòa nhà</option><option>Kết hợp</option></select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Nhãn / Ký hiệu cáp</label><input class="fi" id="cm_label" placeholder="CAP-HN-001 / BB-CORE-DIST01"></div>
+    <div class="fg"><label class="fl">Năm kéo cáp</label><input class="fi" id="cm_year" type="number" placeholder="2022"></div>
+  </div>
+  <div class="fg"><label class="fl">Lộ trình / Ghi chú</label><textarea class="fta" id="cm_note" placeholder="Đi qua: ngõ 5 Trần Hưng Đạo → hộ kỹ thuật T01 → ..."></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('cableModal')">Huỷ</button>
+    <button class="mbs" onclick="saveCable()">💾 LƯU TUYẾN CÁP</button>
+  </div>
+</div>
+</div>
+
+<!-- POWER MODAL -->
+<div class="overlay" id="powerModal">
+<div class="modal">
+  <h3>⚡ Thêm / Sửa thành phần nguồn điện</h3>
+  <input type="hidden" id="pm_editIdx">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Ký hiệu *</label><input class="fi" id="pm_id" placeholder="PSU-CORE-01"></div>
+    <div class="fg"><label class="fl">Loại</label>
+      <select class="fs" id="pm_type">
+        <option>Tủ nguồn (PSU)</option><option>Rectifier Module</option>
+        <option>UPS</option><option>Pin/Battery</option>
+        <option>Bộ phân phối điện (PDU)</option><option>Lưới điện EVN</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Model</label><input class="fi" id="pm_model" placeholder="Eltek Flatpack2 / APC SURT10000"></div>
+    <div class="fg"><label class="fl">Serial Number *</label><input class="fi" id="pm_seri" placeholder="SN-PSU-2024001"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Thông số điện</label><input class="fi" id="pm_spec" placeholder="-48VDC / 50A / 2400W"></div>
+    <div class="fg"><label class="fl">Trạng thái</label>
+      <select class="fs" id="pm_status"><option value="ok">Tốt</option><option value="warn">Cảnh báo</option><option value="error">Lỗi</option></select>
+    </div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Nhãn / Ký hiệu dây điện</label><input class="fi" id="pm_wirelabel" placeholder="PWR-L1 / CB-01 / RECT-A1"></div>
+    <div class="fg"><label class="fl">Vị trí lắp đặt</label><input class="fi" id="pm_slot" placeholder="Rack 3 - U1 / Tủ nguồn số 2"></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Dung lượng pin (%)</label><input class="fi" id="pm_batt" placeholder="95" type="number" min="0" max="100"></div>
+    <div class="fg"><label class="fl">Năm lắp đặt</label><input class="fi" id="pm_year" placeholder="2022" type="number"></div>
+  </div>
+  <div class="fg"><label class="fl">Ghi chú</label><textarea class="fta" id="pm_note"></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('powerModal')">Huỷ</button>
+    <button class="mbs" onclick="savePower()">💾 LƯU NGUỒN ĐIỆN</button>
+  </div>
+</div>
+</div>
+
+<!-- LABEL MODAL -->
+<div class="overlay" id="labelModal">
+<div class="modal">
+  <h3>🏷 Thêm nhãn / ký hiệu</h3>
+  <input type="hidden" id="lm_editIdx">
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Mã nhãn *</label><input class="fi" id="lm_id" placeholder="LBL-001"></div>
+    <div class="fg"><label class="fl">Loại nhãn</label>
+      <select class="fs" id="lm_type">
+        <option value="fiber">Nhãn sợi quang</option>
+        <option value="power">Nhãn dây điện</option>
+        <option value="device">Nhãn thiết bị</option>
+        <option value="cable">Nhãn tuyến cáp</option>
+        <option value="port">Nhãn cổng/port</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Nội dung nhãn *</label><input class="fi" id="lm_text" placeholder="VD: CORE→DIST-01 / PWR-A1 / OLT-PORT-01"></div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Gắn vào (ID thiết bị/sợi)</label><input class="fi" id="lm_attach" placeholder="OLT-CORE-01 / ODF-01-P01"></div>
+    <div class="fg"><label class="fl">Màu nhãn</label>
+      <div class="color-strip" id="labelColorStrip"></div>
+      <input type="hidden" id="lm_color" value="#ffb800">
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Ghi chú / Mô tả thêm</label><textarea class="fta" id="lm_note"></textarea></div>
+  <div class="modal-btns">
+    <button class="mbc" onclick="closeModal('labelModal')">Huỷ</button>
+    <button class="mbs" onclick="saveLabel()">💾 LƯU NHÃN</button>
+  </div>
+</div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="importModal">
+<div class="modal">
+  <h3>↑ Import dữ liệu từ Excel / CSV</h3>
+  <div class="import-area" onclick="document.getElementById('fileInput').click()">
+    <div style="font-size:32px">📂</div>
+    <p>Click để chọn file Excel (.xlsx) hoặc CSV (.csv)</p>
+    <p style="margin-top:6px;font-size:10px;color:var(--dim)">Hoặc kéo thả file vào đây</p>
+  </div>
+  <input type="file" id="fileInput" accept=".csv,.xlsx" style="display:none" onchange="handleImport(this)">
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-hdr"><div class="card-title">Cấu trúc file CSV mẫu (Sheet trạm)</div></div>
+    <div style="background:var(--bg);border-radius:6px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);overflow-x:auto;white-space:nowrap;">
+      id,ten,dia_chi,loai,trang_thai,mo_ta,ket_noi<br>
+      HN-CORE-01,Trạm Core HN,5 Trần Hưng Đạo,core,online,Mô tả,HN-DIST-01<br>
+      HN-DIST-01,Trạm Dist Q1,78 Bà Triệu,dist,online,,HN-CORE-01
+    </div>
+  </div>
+  <button class="mbs" style="width:100%;margin-top:4px" onclick="downloadTemplate()">📥 Tải template Excel mẫu</button>
+  <div class="modal-btns" style="margin-top:10px">
+    <button class="mbc" onclick="closeModal('importModal')">Đóng</button>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- LEAFLET MAP -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<!-- PUBLISH MODAL -->
+<div class="overlay" id="publishModal">
+<div class="modal" style="max-width:580px">
+  <h3>🌐 Hướng dẫn Publish lên Internet</h3>
+  <p style="font-size:11px;color:var(--dim);margin-bottom:14px">Để nhiều người truy cập online, bạn cần đưa file HTML này lên một hosting. Dưới đây là các cách từ dễ đến khó:</p>
+
+  <div class="pub-option" style="border-color:rgba(0,255,157,.3)">
+    <h4>🥇 GitHub Pages <span class="pub-free">MIỄN PHÍ</span></h4>
+    <p>Cách đơn giản nhất. Tạo tài khoản GitHub (miễn phí) → tạo Repository → upload file HTML → bật GitHub Pages → có link dạng <code>ten-ban.github.io/ten-repo</code></p>
+    <div class="pub-step" style="margin-top:8px;padding:8px">
+      <div style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;line-height:1.8">
+        1. Vào <code>github.com</code> → Đăng ký → New Repository<br>
+        2. Upload file <code>TTVTCHUSE_NET-v3.html</code> → đổi tên thành <code>index.html</code><br>
+        3. Settings → Pages → Source: <code>main branch</code> → Save<br>
+        4. Sau ~1 phút có link: <code>username.github.io/repo-name</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="pub-option" style="border-color:rgba(0,212,255,.2)">
+    <h4>🥈 Netlify Drop <span class="pub-free">MIỄN PHÍ</span></h4>
+    <p>Nhanh nhất — không cần tài khoản. Kéo thả file HTML vào trang web Netlify.</p>
+    <div style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;line-height:1.8">
+      1. Vào <code>app.netlify.com/drop</code><br>
+      2. Kéo thả file <code>index.html</code> (đổi tên trước) vào vùng drop<br>
+      3. Ngay lập tức có link dạng: <code>random-name.netlify.app</code><br>
+      4. Đăng ký tài khoản để giữ link cố định
+    </div>
+  </div>
+
+  <div class="pub-option">
+    <h4>🥉 Google Drive (xem nội bộ) <span class="pub-free">MIỄN PHÍ</span></h4>
+    <p>Upload file lên Google Drive → Share link → đồng nghiệp tải về và mở bằng trình duyệt. Không xem trực tiếp online nhưng tiện chia sẻ nội bộ.</p>
+  </div>
+
+  <div class="pub-option">
+    <h4>🏢 Server nội bộ (LAN) <span class="pub-free">MIỄN PHÍ</span></h4>
+    <p>Copy file vào máy tính/server nội bộ → cài IIS (Windows) hoặc Apache/Nginx (Linux) → truy cập qua IP nội bộ. Phù hợp dùng trong công ty không cần internet.</p>
+  </div>
+
+  <div style="padding:10px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:6px;font-size:10px;color:var(--dim);margin-top:4px">
+    ⚠️ <strong style="color:var(--warn)">Lưu ý bảo mật:</strong> Dữ liệu lưu trong localStorage trên từng máy. Nếu muốn nhiều người cùng sửa và đồng bộ realtime, cần kết nối Google Sheets hoặc nâng cấp lên backend (Firebase/Supabase). Liên hệ để được hỗ trợ thêm.
+  </div>
+
+  <div class="modal-btns" style="margin-top:14px">
+    <button class="mbc" onclick="closeModal('publishModal')">Đóng</button>
+    <button class="mbs" onclick="window.open('https://app.netlify.com/drop','_blank')">🚀 Mở Netlify Drop</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════
+// DATA STORE
+// ══════════════════════════════
+let DB = {
+  stations: [],
+  devices: {},   // stationId -> []
+  odfs: {},      // stationId -> []
+  fibers: {},    // "stationId|odfId" -> []
+  cables: {},    // stationId -> []
+  power: {},     // stationId -> []
+  labels: {},    // stationId -> []
+};
+
+let currentStnId = null;
+let currentTab = 'overview';
+let currentODFId = null;
+let selectedFiberColor = '#00d4ff';
+let selectedCableColor = '#00d4ff';
+let selectedLabelColor = '#ffb800';
+
+// ══════════════════════════════
+// COLORS
+// ══════════════════════════════
+const FIBER_COLORS = [
+  {c:'#00bfff',n:'Xanh dương'},
+  {c:'#ff9500',n:'Cam'},
+  {c:'#00d26a',n:'Xanh lá'},
+  {c:'#d4a017',n:'Vàng nâu'},
+  {c:'#a855f7',n:'Tím'},
+  {c:'#ff4757',n:'Đỏ'},
+  {c:'#000000',n:'Đen'},
+  {c:'#ffffff',n:'Trắng'},
+  {c:'#e8a09a',n:'Hồng'},
+  {c:'#00d4ff',n:'Xanh nhạt'},
+  {c:'#2ecc71',n:'Xanh sáng'},
+  {c:'#95a5a6',n:'Xám'},
+];
+
+// ══════════════════════════════
+// INIT DEMO DATA
+// ══════════════════════════════
+function initDemo() {
+  DB.stations = [
+    {id:'HN-CORE-01',ten:'Trạm Core Hoàn Kiếm',dia_chi:'5 Trần Hưng Đạo, Hoàn Kiếm, HN',loai:'core',trang_thai:'online',mo_ta:'Trạm backbone kết nối quốc gia',ket_noi:'HN-DIST-01,HN-DIST-02',lat:21.028511,lng:105.852136},
+    {id:'HN-DIST-01',ten:'Trạm Dist Hai Bà Trưng',dia_chi:'78 Bà Triệu, Hai Bà Trưng, HN',loai:'dist',trang_thai:'online',mo_ta:'Phân phối khu Hai Bà Trưng',ket_noi:'HN-CORE-01,HN-ACC-01',lat:21.015234,lng:105.847890},
+    {id:'HN-DIST-02',ten:'Trạm Dist Đống Đa',dia_chi:'12 Lê Duẩn, Đống Đa, HN',loai:'dist',trang_thai:'warn',mo_ta:'⚠️ UPS pin yếu',ket_noi:'HN-CORE-01',lat:21.022876,lng:105.841234},
+    {id:'HN-ACC-01',ten:'Trạm Access Bạch Đằng',dia_chi:'P. Bạch Đằng, Hai Bà Trưng',loai:'access',trang_thai:'online',mo_ta:'Truy nhập khu dân cư',ket_noi:'HN-DIST-01',lat:21.011567,lng:105.850123},
+  ];
+  DB.devices['HN-CORE-01'] = [
+    {id:'OLT-CORE-01',type:'OLT',model:'ZTE C650',seri:'ZTE2024C650001',slot:'Rack 1 - U3',status:'ok',ports:'128 port GPON',year:'2022',note:''},
+    {id:'SW-CORE-01',type:'Switch',model:'Huawei S7706',seri:'HW-SW-7706-001',slot:'Rack 2 - U2',status:'ok',ports:'48x10G SFP+',year:'2022',note:''},
+    {id:'UPS-CORE-01',type:'UPS',model:'APC SURT10000',seri:'APC-SN-10K-001',slot:'Rack 3 - U1',status:'ok',ports:'10KVA',year:'2020',note:''},
+    {id:'ODF-CORE-01',type:'ODF',model:'ODF 144FO Commscope',seri:'ODF-CS-144-001',slot:'Tủ ODF số 1',status:'ok',ports:'144 sợi LC/UPC',year:'2022',note:''},
+  ];
+  DB.devices['HN-DIST-01'] = [
+    {id:'OLT-D01-01',type:'OLT',model:'ZTE C300M',seri:'ZTE2023C300001',slot:'Rack 1 - U2',status:'ok',ports:'32 port GPON',year:'2023',note:''},
+    {id:'UPS-D01-01',type:'UPS',model:'APC Smart-UPS 3000',seri:'APC-3K-D01-001',slot:'Rack 2',status:'ok',ports:'3KVA',year:'2021',note:''},
+  ];
+  DB.odfs['HN-CORE-01'] = [
+    {id:'ODF-01',model:'ODF 144FO Commscope',total:144,conn:'LC/UPC',slot:'Tủ ODF số 1, cạnh Rack 1',seri:'ODF-CS-144-001',note:'ODF chính'},
+    {id:'ODF-02',model:'ODF 48FO',total:48,conn:'SC/APC',slot:'Tủ ODF số 2',seri:'ODF-48-002',note:'ODF dự phòng'},
+  ];
+  DB.fibers['HN-CORE-01|ODF-01'] = [
+    {port:1,status:'used',fiber:'SM-G652D',label:'CORE→DIST01-P01',from:'ODF-01/Port-01',to:'HN-DIST-01/ODF-D1/Port-01',color:'#00bfff',tube:'Tube 1 (xanh)',pos:1,note:''},
+    {port:2,status:'used',fiber:'SM-G652D',label:'CORE→DIST01-P02',from:'ODF-01/Port-02',to:'HN-DIST-01/ODF-D1/Port-02',color:'#ff9500',tube:'Tube 1 (xanh)',pos:2,note:''},
+    {port:3,status:'used',fiber:'SM-G652D',label:'CORE→DIST02-P01',from:'ODF-01/Port-03',to:'HN-DIST-02/ODF-D2/Port-01',color:'#00d26a',tube:'Tube 1 (xanh)',pos:3,note:''},
+    {port:4,status:'free',fiber:'SM-G652D',label:'',from:'',to:'',color:'#333',tube:'',pos:4,note:''},
+    {port:5,status:'free',fiber:'SM-G652D',label:'',from:'',to:'',color:'#333',tube:'',pos:5,note:''},
+    {port:6,status:'fault',fiber:'SM-G652D',label:'HỎNG',from:'',to:'',color:'#ff4757',tube:'Tube 2',pos:1,note:'Đứt sợi'},
+  ];
+  DB.cables['HN-CORE-01'] = [
+    {id:'CAP-001',color:'#00bfff',from:'HN-CORE-01',to:'HN-DIST-01',type:'Cáp quang SM-G652D',fibers:24,length:2.3,route:'Cống bể ngầm',label:'CAP-BB-CORE-D01',year:2022,note:'Đi qua ngõ 5 TH Đạo → hộ T01'},
+    {id:'CAP-002',color:'#00d26a',from:'HN-CORE-01',to:'HN-DIST-02',type:'Cáp quang SM-G652D',fibers:24,length:1.8,route:'Treo cột điện',label:'CAP-BB-CORE-D02',year:2022,note:'Cột ĐL số 12-15 đường Lê Duẩn'},
+  ];
+  DB.power['HN-CORE-01'] = [
+    {id:'EVN-C01',type:'Lưới điện EVN',model:'EVN 3 pha',seri:'EVN-METER-001',spec:'220V/50Hz - 3 pha',status:'ok',wirelabel:'PWR-EVN-IN',slot:'Tủ điện chính',batt:'',year:2020,note:''},
+    {id:'PSU-C01',type:'Tủ nguồn (PSU)',model:'Emerson Liebert NX',seri:'PSU-EMR-2020001',spec:'-48VDC / 100A / 4800W',status:'ok',wirelabel:'PWR-48V-BUS-A',slot:'Rack 3 - U1',batt:'',year:2020,note:'Tủ nguồn chính'},
+    {id:'RECT-C01',type:'Rectifier Module',model:'Emerson R48-2900U',seri:'RECT-R48-001',spec:'-48VDC / 60.4A',status:'ok',wirelabel:'RECT-A1 / CB-01',slot:'PSU-C01 / Module 1',batt:'',year:2020,note:''},
+    {id:'UPS-C01',type:'UPS',model:'APC SURT10000',seri:'APC-SN-10K-001',spec:'10KVA / 8000W',status:'ok',wirelabel:'UPS-OUT-A',slot:'Rack 3 - U5',batt:'95',year:2020,note:''},
+    {id:'BATT-C01',type:'Pin/Battery',model:'Yuasa NP65-12',seri:'BATT-YS-12V-001',spec:'12V / 65Ah x8',status:'ok',wirelabel:'BATT-BUS-A',slot:'Kệ pin số 1',batt:'95',year:2022,note:'8 bình, thay 2022'},
+  ];
+  DB.labels['HN-CORE-01'] = [
+    {id:'LBL-001',type:'fiber',text:'CORE→DIST01',attach:'ODF-01-P01',color:'#00bfff',note:'Nhãn sợi quang port 01'},
+    {id:'LBL-002',type:'power',text:'PWR-48V-BUS-A',attach:'PSU-C01',color:'#ffb800',note:'Nhãn dây điện tủ nguồn'},
+    {id:'LBL-003',type:'device',text:'OLT-CORE-01 / ZTE C650',attach:'OLT-CORE-01',color:'#00d4ff',note:'Nhãn thiết bị OLT'},
+  ];
+}
+
+// ══════════════════════════════
+// RENDER SIDEBAR
+// ══════════════════════════════
+function renderSB(list) {
+  const el = document.getElementById('sbList');
+  if (!list.length) { el.innerHTML='<div style="padding:16px;text-align:center;font-size:10px;color:var(--dim)">Không tìm thấy</div>'; return; }
+  const typeMap={core:'CORE',dist:'DIST',access:'ACC'};
+  const badgeMap={core:'bc',dist:'bd',access:'ba'};
+  el.innerHTML = list.map(s=>`
+    <div class="sb-item" id="sbi-${s.id}" onclick="selectStn('${s.id}')">
+      <div class="dot ${s.trang_thai}"></div>
+      <div class="sb-info">
+        <div class="sb-name">${s.id}</div>
+        <div class="sb-sub">${(s.dia_chi||'').split(',')[0]}</div>
+      </div>
+      <span class="sb-badge ${badgeMap[s.loai]||'ba'}">${typeMap[s.loai]||'?'}</span>
+    </div>`).join('');
+}
+function filterSB(q) {
+  const f = DB.stations.filter(s=>(s.id+s.ten+s.dia_chi+s.mo_ta).toLowerCase().includes(q.toLowerCase()));
+  renderSB(f);
+}
+
+// ══════════════════════════════
+// STATS
+// ══════════════════════════════
+function updateStats() {
+  const s=DB.stations;
+  const on=s.filter(x=>x.trang_thai==='online').length;
+  const w=s.filter(x=>x.trang_thai==='warn').length;
+  const e=s.filter(x=>x.trang_thai==='error').length;
+  document.getElementById('hdrStats').innerHTML=`
+    <span style="color:var(--green)">●${on} online</span>
+    <span style="color:var(--warn)">▲${w} cảnh báo</span>
+    <span style="color:var(--red)">✕${e} sự cố</span>
+    <span>| ${s.length} trạm</span>`;
+}
+
+// ══════════════════════════════
+// WELCOME
+// ══════════════════════════════
+function renderWelcome() {
+  const s=DB.stations;
+  const on=s.filter(x=>x.trang_thai==='online').length;
+  const w=s.filter(x=>x.trang_thai==='warn').length;
+  const e=s.filter(x=>x.trang_thai==='error').length;
+  const issues=s.filter(x=>x.trang_thai!=='online');
+  document.getElementById('welcomeDiv').innerHTML=`
+    <div style="margin-bottom:16px">
+      <h2 style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);margin-bottom:4px">TTVTCHUSE_NET v3 — Quản lý hạ tầng nhà trạm</h2>
+      <p style="font-size:11px;color:var(--dim)">Quản lý toàn diện: trạm, thiết bị, ODF, sợi quang, tuyến cáp, nguồn điện, nhãn ký hiệu</p>
+    </div>
+    <div class="g4">
+      <div class="stat"><div class="stat-v">${s.length}</div><div class="stat-l">Tổng trạm</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--green)">${on}</div><div class="stat-l">Online</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--warn)">${w}</div><div class="stat-l">Cảnh báo</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--red)">${e}</div><div class="stat-l">Sự cố</div></div>
+    </div>
+    ${issues.length?`<div class="card" style="border-color:rgba(255,184,0,.3);margin-bottom:14px">
+      <div class="card-hdr"><div class="card-title" style="color:var(--warn)">⚠ Trạm cần xử lý</div></div>
+      ${issues.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(30,45,69,.3);cursor:pointer" onclick="selectStn('${x.id}')">
+        <div class="dot ${x.trang_thai}"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text)">${x.id}</span>
+        <span style="font-size:10px;color:var(--dim)">${x.dia_chi}</span>
+        <span style="margin-left:auto" class="tag ${x.trang_thai==='warn'?'twarn':'terr'}">${x.trang_thai.toUpperCase()}</span>
+      </div>`).join('')}
+    </div>`:''}
+    <div class="welcome-grid">
+      <div class="wcard" onclick="openModal('station')"><div class="wcard-icon">🏛</div><h3>Thêm nhà trạm</h3><p>Khai báo trạm mới với đầy đủ thông tin địa chỉ, loại, kết nối</p></div>
+      <div class="wcard" onclick="selectStn('${s[0]?.id||''}');setTimeout(()=>switchTabDirect('odf'),100)"><div class="wcard-icon">🔌</div><h3>Quản lý ODF</h3><p>Xem và nhập sơ đồ ODF, vị trí từng sợi quang, dây nhảy</p></div>
+      <div class="wcard" onclick="importExcel()"><div class="wcard-icon">📂</div><h3>Import Excel</h3><p>Upload file Excel/CSV có sẵn để nhập hàng loạt dữ liệu</p></div>
+    </div>`;
+  document.getElementById('detailDiv').style.display='none';
+  document.getElementById('welcomeDiv').style.display='block';
+  document.getElementById('tabBar').style.display='none';
+}
+
+// ══════════════════════════════
+// SELECT STATION
+// ══════════════════════════════
+function selectStn(id) {
+  if(!id) return;
+  currentStnId = id;
+  document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+  const el=document.getElementById('sbi-'+id);
+  if(el){el.classList.add('active');el.scrollIntoView({block:'nearest'});}
+  document.getElementById('welcomeDiv').style.display='none';
+  document.getElementById('detailDiv').style.display='block';
+  document.getElementById('tabBar').style.display='flex';
+  currentTab='overview';
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  renderTab();
+}
+
+function switchTab(tab,el) {
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderTab();
+}
+function switchTabDirect(tab) {
+  currentTab=tab;
+  const map={overview:0,devices:1,odf:2,cable:3,power:4,labels:5};
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===map[tab]));
+  renderTab();
+}
+
+// ══════════════════════════════
+// RENDER TABS
+// ══════════════════════════════
+function renderTab() {
+  const id = currentStnId;
+  const s = DB.stations.find(x=>x.id===id);
+  if(!s) return;
+  const icons={core:'🏛',dist:'🔗',access:'📡'};
+  const icon=icons[s.loai]||'📡';
+
+  const header=`
+    <div class="stnhdr">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div class="stnicon">${icon}</div>
+        <div class="stntitle">
+          <h1>${s.id}</h1>
+          <p>${s.dia_chi}</p>
+          ${s.mo_ta?`<p style="font-size:10px;color:var(--orange);margin-top:2px">${s.mo_ta}</p>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <div class="spill ${s.trang_thai}">${s.trang_thai==='online'?'● ONLINE':s.trang_thai==='warn'?'⚠ CẢNH BÁO':'✕ SỰ CỐ'}</div>
+        <div style="display:flex;gap:5px">
+          <button class="act-btn ab-blue" onclick="editStation('${s.id}')">✏ Sửa</button>
+          <button class="act-btn ab-red" onclick="deleteStation('${s.id}')">✕ Xoá</button>
+        </div>
+      </div>
+    </div>`;
+
+  let body='';
+  if(currentTab==='overview') body=renderOverview(s);
+  else if(currentTab==='devices') body=renderDevices(id);
+  else if(currentTab==='odf') body=renderODF(id);
+  else if(currentTab==='cable') body=renderCable(id);
+  else if(currentTab==='power') body=renderPower(id);
+  else if(currentTab==='labels') body=renderLabels(id);
+
+  document.getElementById('detailDiv').innerHTML=header+body;
+}
+
+// ── OVERVIEW ──
+function renderOverview(s) {
+  const connects=(s.ket_noi||'').split(',').filter(Boolean).map(c=>c.trim());
+  const linked=connects.map(c=>DB.stations.find(x=>x.id===c)).filter(Boolean);
+  const devCount=(DB.devices[s.id]||[]).length;
+  const odfCount=(DB.odfs[s.id]||[]).length;
+  const cableCount=(DB.cables[s.id]||[]).length;
+  const pwrCount=(DB.power[s.id]||[]).length;
+
+  return `
+    <div class="g4">
+      <div class="stat"><div class="stat-v">${devCount}</div><div class="stat-l">Thiết bị</div></div>
+      <div class="stat"><div class="stat-v">${odfCount}</div><div class="stat-l">ODF</div></div>
+      <div class="stat"><div class="stat-v">${cableCount}</div><div class="stat-l">Tuyến cáp</div></div>
+      <div class="stat"><div class="stat-v">${pwrCount}</div><div class="stat-l">TT nguồn điện</div></div>
+    </div>
+    <div class="topo-wrap">
+      <div class="card-hdr"><div class="card-title">Sơ đồ kết nối</div></div>
+      <svg viewBox="0 0 640 240" style="width:100%;height:200px">
+        <rect x="220" y="85" width="200" height="60" rx="8" fill="rgba(0,212,255,.1)" stroke="#00d4ff" stroke-width="2"/>
+        <text x="320" y="111" text-anchor="middle" fill="#00d4ff" font-family="JetBrains Mono" font-size="13" font-weight="700">${s.id}</text>
+        <text x="320" y="129" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono" font-size="9">${icon} ${s.loai.toUpperCase()} | ${devCount} thiết bị | ${odfCount} ODF</text>
+        ${linked.map((cs,i)=>{
+          const t=linked.length;
+          const sp=Math.min(200,t*130);
+          const cx=t===1?320:320-(sp/2)+(i*(sp/Math.max(t-1,1)));
+          const isUp=cs.loai==='core';
+          const cy=isUp?20:195;
+          const y1=isUp?85:145;
+          const cc={core:'#00d4ff',dist:'#00ff9d',access:'#ff6b35'}[cs.loai]||'#94a3b8';
+          const dc=cs.trang_thai==='online'?'#00ff9d':cs.trang_thai==='warn'?'#ffb800':'#ff4757';
+          return `
+            <line x1="320" y1="${y1}" x2="${cx}" y2="${isUp?55:175}" stroke="${cc}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1.5s" repeatCount="indefinite"/>
+            </line>
+            <g style="cursor:pointer" onclick="selectStn('${cs.id}')">
+              <rect x="${cx-70}" y="${cy}" width="140" height="40" rx="6" fill="rgba(${cs.loai==='core'?'0,212,255':cs.loai==='dist'?'0,255,157':'255,107,53'},.08)" stroke="${cc}" stroke-width="1.5"/>
+              <circle cx="${cx-56}" cy="${cy+18}" r="4" fill="${dc}"/>
+              <text x="${cx+4}" y="${cy+15}" text-anchor="middle" fill="${cc}" font-family="JetBrains Mono" font-size="11" font-weight="700">${cs.id}</text>
+              <text x="${cx}" y="${cy+28}" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono" font-size="8">${(cs.dia_chi||'').split(',')[0].substring(0,18)}</text>
+            </g>`;
+        }).join('')}
+        ${linked.length===0?`<text x="320" y="200" text-anchor="middle" fill="#1e2d45" font-family="JetBrains Mono" font-size="9">Chưa khai báo kết nối — Nhấn ✏ Sửa để thêm</text>`:''}
+      </svg>
+    </div>
+    ${linked.length?`<div class="g${Math.min(linked.length,3)}" style="margin-bottom:0">
+      ${linked.map(cs=>`<div class="card" style="cursor:pointer;padding:10px" onclick="selectStn('${cs.id}')">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);margin-bottom:3px">${cs.id}</div>
+        <div style="font-size:10px;color:var(--dim)">${cs.dia_chi}</div>
+        <span class="tag ${cs.trang_thai==='online'?'tok':cs.trang_thai==='warn'?'twarn':'terr'}" style="margin-top:6px;display:inline-block">${cs.trang_thai.toUpperCase()}</span>
+      </div>`).join('')}
+    </div>`:''}`;
+}
+
+// ── DEVICES ──
+function renderDevices(id) {
+  const devs=DB.devices[id]||[];
+  return `
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Thiết bị trong trạm (${devs.length})</div>
+        <div class="card-actions">
+          <button class="act-btn ab-green" onclick="openModal('device')">＋ Thêm thiết bị</button>
+        </div>
+      </div>
+      ${devs.length?`<table class="tbl">
+        <tr><th>Ký hiệu</th><th>Loại</th><th>Model</th><th>Serial Number</th><th>Vị trí</th><th>Thông số</th><th>Năm</th><th>TT</th><th></th></tr>
+        ${devs.map((d,i)=>`<tr>
+          <td class="id-col">${d.id}</td>
+          <td>${d.type}</td>
+          <td style="color:var(--text)">${d.model}</td>
+          <td class="seri-col">${d.seri||'—'}</td>
+          <td style="color:var(--mid)">${d.slot}</td>
+          <td style="color:var(--dim)">${d.ports}</td>
+          <td style="color:var(--dim)">${d.year||'—'}</td>
+          <td><span class="tag ${d.status==='ok'?'tok':d.status==='warn'?'twarn':'terr'}">${d.status==='ok'?'OK':'⚠'}</span></td>
+          <td>
+            <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="editDevice(${i})">✏</button>
+            <button class="act-btn ab-red" style="padding:2px 7px;font-size:9px" onclick="deleteDevice(${i})">✕</button>
+          </td>
+        </tr>`).join('')}
+      </table>`:`<div style="padding:20px 0;text-align:center;color:var(--dim);font-size:11px">Chưa có thiết bị — Nhấn "＋ Thêm thiết bị"</div>`}
+    </div>`;
+}
+
+// ── ODF ──
+function renderODF(id) {
+  const odfs=DB.odfs[id]||[];
+  return `
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Danh sách ODF (${odfs.length})</div>
+        <div class="card-actions">
+          <button class="act-btn ab-green" onclick="openModal('odf')">＋ Thêm ODF</button>
+        </div>
+      </div>
+      ${odfs.length?`<table class="tbl">
+        <tr><th>Ký hiệu</th><th>Model</th><th>Serial</th><th>Tổng port</th><th>Đầu nối</th><th>Vị trí</th><th></th></tr>
+        ${odfs.map((o,i)=>{
+          const fibers=DB.fibers[id+'|'+o.id]||[];
+          const used=fibers.filter(f=>f.status==='used').length;
+          const fault=fibers.filter(f=>f.status==='fault').length;
+          return `<tr>
+            <td class="id-col" style="cursor:pointer" onclick="viewODF('${o.id}')">${o.id}</td>
+            <td style="color:var(--text)">${o.model}</td>
+            <td class="seri-col">${o.seri||'—'}</td>
+            <td>${o.total} sợi</td>
+            <td>${o.conn}</td>
+            <td style="color:var(--dim)">${o.slot}</td>
+            <td>
+              <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="viewODF('${o.id}')">🔍 Xem</button>
+              <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="editODF(${i})">✏</button>
+              <button class="act-btn ab-red" style="padding:2px 7px;font-size:9px" onclick="deleteODF(${i})">✕</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </table>`:`<div style="padding:20px 0;text-align:center;color:var(--dim);font-size:11px">Chưa có ODF — Nhấn "＋ Thêm ODF"</div>`}
+    </div>
+    ${odfs.map(o=>renderODFDetail(id,o)).join('')}`;
+}
+
+function renderODFDetail(stnId, o) {
+  const fibers=DB.fibers[stnId+'|'+o.id]||[];
+  const used=fibers.filter(f=>f.status==='used').length;
+  const free=fibers.filter(f=>f.status==='free').length;
+  const fault=fibers.filter(f=>f.status==='fault').length;
+  return `
+    <div class="card" id="odf-detail-${o.id}">
+      <div class="card-hdr">
+        <div class="card-title">ODF: ${o.id} — ${o.model} (${o.total} sợi)</div>
+        <div class="card-actions">
+          <span style="font-size:10px;color:var(--green)">●${used} đấu</span>
+          <span style="font-size:10px;color:var(--dim);margin-left:6px">○${free} trống</span>
+          ${fault?`<span style="font-size:10px;color:var(--red);margin-left:6px">✕${fault} lỗi</span>`:''}
+          <button class="act-btn ab-green" onclick="currentODFId='${o.id}';openModal('fiber')">＋ Thêm cổng</button>
+          <button class="act-btn ab-gray" onclick="bulkAddFibers('${stnId}','${o.id}',${o.total})">⚡ Tạo nhanh ${o.total} cổng</button>
+        </div>
+      </div>
+      <!-- Visual Grid -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:6px">SƠ ĐỒ CỔNG ODF (click để xem/sửa)</div>
+        <div class="odf-grid" style="grid-template-columns:repeat(${Math.min(24,o.total)},1fr)">
+          ${Array.from({length:Math.min(o.total,96)},(_, i)=>{
+            const p=i+1;
+            const f=fibers.find(x=>x.port===p);
+            const cls=f?f.status==='used'?'odf-used':f.status==='fault'?'odf-fault':'odf-free':'odf-free';
+            const bg=f&&f.status==='used'?f.color:'';
+            const title=f?`Port ${p}: ${f.label||f.to||'Trống'}`:`Port ${p}: Trống`;
+            return `<div class="odf-port-cell ${cls}" 
+              style="${bg?'background:'+bg+'33;border-color:'+bg+';color:'+bg:''}"
+              onclick="editFiberPort('${stnId}','${o.id}',${p})"
+              title="${title}">${p}</div>`;
+          }).join('')}
+        </div>
+        ${o.total>96?`<div style="font-size:9px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace">... và ${o.total-96} cổng còn lại (cuộn xuống)</div>`:''}
+      </div>
+      <!-- Fiber List -->
+      ${fibers.length?`
+        <div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:8px">DANH SÁCH SỢI QUANG ĐÃ KHAI BÁO</div>
+        ${fibers.sort((a,b)=>a.port-b.port).map((f,i)=>`
+          <div class="fiber-row" onclick="editFiberPort('${stnId}','${o.id}',${f.port})">
+            <div class="fiber-color" style="background:${f.color}33;border:1px solid ${f.color}">
+              <span style="color:${f.color};font-size:8px;font-weight:700">${f.port}</span>
+            </div>
+            <div class="fiber-info">
+              <div class="fiber-label">${f.label||('Port '+f.port)} <span style="font-weight:400;color:var(--dim)">— ${f.fiber}</span></div>
+              <div class="fiber-detail">Từ: ${f.from||'—'} &nbsp;→&nbsp; Đến: ${f.to||'—'}</div>
+              ${f.tube?`<div style="font-size:9px;color:var(--dim);margin-top:1px">${f.tube} / Sợi ${f.pos||'?'}</div>`:''}
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <span class="tag ${f.status==='used'?'tused':f.status==='fault'?'terr':'tna'}">${f.status==='used'?'ĐÃ ĐẤU':f.status==='fault'?'LỖI':'TRỐNG'}</span>
+              <div style="display:flex;gap:4px;margin-top:4px">
+                <button class="act-btn ab-red" style="padding:1px 6px;font-size:9px" onclick="event.stopPropagation();deleteFiber('${stnId}','${o.id}',${i})">✕</button>
+              </div>
+            </div>
+          </div>`).join('')}`:''}
+    </div>`;
+}
+
+function viewODF(odfId) {
+  const el=document.getElementById('odf-detail-'+odfId);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function bulkAddFibers(stnId,odfId,total) {
+  const key=stnId+'|'+odfId;
+  if(!DB.fibers[key]) DB.fibers[key]=[];
+  const existing=DB.fibers[key].map(f=>f.port);
+  let added=0;
+  for(let i=1;i<=total;i++){
+    if(!existing.includes(i)){
+      DB.fibers[key].push({port:i,status:'free',fiber:'SM-G652D',label:'',from:'',to:'',color:'#333',tube:'',pos:i,note:''});
+      added++;
+    }
+  }
+  toast(`✅ Đã tạo ${added} cổng trống cho ${odfId}`);
+  renderTab();
+}
+
+// ── CABLE ──
+function renderCable(id) {
+  const cables=DB.cables[id]||[];
+  return `
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Tuyến cáp (${cables.length})</div>
+        <div class="card-actions"><button class="act-btn ab-green" onclick="openModal('cable')">＋ Thêm tuyến cáp</button></div>
+      </div>
+      ${cables.length?cables.map((c,i)=>`
+        <div class="cable-row">
+          <div class="cable-line" style="background:${c.color}"></div>
+          <div class="cable-info">
+            <div class="cable-lbl">${c.id} — ${c.label||''}</div>
+            <div class="cable-detail">
+              ${c.from} → ${c.to} &nbsp;|&nbsp; ${c.type} &nbsp;|&nbsp; ${c.fibers} sợi &nbsp;|&nbsp; ${c.length}km &nbsp;|&nbsp; ${c.route}
+            </div>
+            ${c.note?`<div style="font-size:9px;color:var(--dim);margin-top:2px">📍 ${c.note}</div>`:''}
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:4px">
+            <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="editCable(${i})">✏</button>
+            <button class="act-btn ab-red" style="padding:2px 7px;font-size:9px" onclick="deleteCable(${i})">✕</button>
+          </div>
+        </div>`).join(''):`<div style="padding:20px 0;text-align:center;color:var(--dim);font-size:11px">Chưa có tuyến cáp — Nhấn "＋ Thêm tuyến cáp"</div>`}
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Chú thích màu tuyến cáp</div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0">
+        ${FIBER_COLORS.slice(0,8).map(c=>`<div style="display:flex;align-items:center;gap:6px">
+          <div style="width:20px;height:5px;background:${c.c};border-radius:2px"></div>
+          <span style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace">${c.n}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── POWER ──
+function renderPower(id) {
+  const pwrs=DB.power[id]||[];
+  const chain=pwrs.filter(p=>['Lưới điện EVN','Tủ nguồn (PSU)','UPS','Pin/Battery'].includes(p.type));
+  return `
+    ${chain.length?`<div class="card">
+      <div class="card-hdr"><div class="card-title">Sơ đồ chuỗi nguồn điện</div></div>
+      <div class="pchain">
+        ${chain.map((p,i)=>`
+          <div class="pnode" style="${p.status==='warn'?'border-color:rgba(255,184,0,.4)':p.status==='error'?'border-color:rgba(255,71,87,.4)':''}">
+            <div class="pnode-lbl">${p.type}</div>
+            <div class="pnode-name">${p.id}</div>
+            <div class="pnode-val">${p.spec}</div>
+            ${p.wirelabel?`<div class="pnode-seri">🏷 ${p.wirelabel}</div>`:''}
+            ${p.batt?`<div class="pnode-seri">🔋 Pin: ${p.batt}%</div>`:''}
+          </div>
+          ${i<chain.length-1?'<div class="parrow">→</div>':''}`).join('')}
+      </div>
+    </div>`:''}
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Tất cả thành phần nguồn điện (${pwrs.length})</div>
+        <div class="card-actions"><button class="act-btn ab-green" onclick="openModal('power')">＋ Thêm</button></div>
+      </div>
+      ${pwrs.length?`<table class="tbl">
+        <tr><th>Ký hiệu</th><th>Loại</th><th>Model</th><th>Serial Number</th><th>Thông số</th><th>Nhãn dây điện</th><th>Vị trí</th><th>Pin%</th><th>TT</th><th></th></tr>
+        ${pwrs.map((p,i)=>`<tr>
+          <td class="id-col">${p.id}</td>
+          <td style="color:var(--text);font-size:10px">${p.type}</td>
+          <td>${p.model}</td>
+          <td class="seri-col">${p.seri||'—'}</td>
+          <td style="color:var(--dim)">${p.spec}</td>
+          <td class="label-col">${p.wirelabel||'—'}</td>
+          <td style="color:var(--dim);font-size:10px">${p.slot}</td>
+          <td style="color:${p.batt&&p.batt<30?'var(--red)':p.batt&&p.batt<60?'var(--warn)':'var(--green)'}">${p.batt?p.batt+'%':'—'}</td>
+          <td><span class="tag ${p.status==='ok'?'tok':p.status==='warn'?'twarn':'terr'}">${p.status==='ok'?'OK':'⚠'}</span></td>
+          <td>
+            <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="editPower(${i})">✏</button>
+            <button class="act-btn ab-red" style="padding:2px 7px;font-size:9px" onclick="deletePower(${i})">✕</button>
+          </td>
+        </tr>`).join('')}
+      </table>`:`<div style="padding:20px 0;text-align:center;color:var(--dim);font-size:11px">Chưa có — Nhấn "＋ Thêm"</div>`}
+    </div>`;
+}
+
+// ── LABELS ──
+function renderLabels(id) {
+  const labels=DB.labels[id]||[];
+  const typeIcon={fiber:'🔵',power:'⚡',device:'📦',cable:'🔶',port:'🔌'};
+  return `
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">Nhãn & Ký hiệu (${labels.length})</div>
+        <div class="card-actions"><button class="act-btn ab-green" onclick="openModal('label')">＋ Thêm nhãn</button></div>
+      </div>
+      <p style="font-size:10px;color:var(--dim);margin-bottom:12px">Quản lý nhãn dán trên thiết bị, sợi quang, dây điện, tuyến cáp để nhận biết nhanh ngoài thực địa.</p>
+      ${labels.length?`<table class="tbl">
+        <tr><th>Mã nhãn</th><th>Loại</th><th>Nội dung nhãn</th><th>Gắn vào</th><th>Màu</th><th>Ghi chú</th><th></th></tr>
+        ${labels.map((l,i)=>`<tr>
+          <td class="id-col">${l.id}</td>
+          <td>${typeIcon[l.type]||'🏷'} ${l.type}</td>
+          <td><span style="background:${l.color}22;border:1px solid ${l.color};border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono',monospace;font-size:10px;color:${l.color};font-weight:700">${l.text}</span></td>
+          <td style="color:var(--mid)">${l.attach||'—'}</td>
+          <td><div style="width:16px;height:16px;background:${l.color};border-radius:3px"></div></td>
+          <td style="color:var(--dim);font-size:10px">${l.note||'—'}</td>
+          <td>
+            <button class="act-btn ab-blue" style="padding:2px 7px;font-size:9px" onclick="editLabel(${i})">✏</button>
+            <button class="act-btn ab-red" style="padding:2px 7px;font-size:9px" onclick="deleteLabel(${i})">✕</button>
+          </td>
+        </tr>`).join('')}
+      </table>`:`<div style="padding:20px 0;text-align:center;color:var(--dim);font-size:11px">Chưa có nhãn — Nhấn "＋ Thêm nhãn"</div>`}
+    </div>`;
+}
+
+// ══════════════════════════════
+// MODAL OPEN/CLOSE
+// ══════════════════════════════
+function openModal(type) {
+  const modals={station:'stationModal',device:'deviceModal',odf:'odfModal',fiber:'fiberModal',cable:'cableModal',power:'powerModal',label:'labelModal',import:'importModal'};
+  if(type==='import'){document.getElementById('importModal').classList.add('open');return;}
+  const mid=modals[type];
+  if(!mid)return;
+  // reset edit index
+  ['dm_editIdx','om_editIdx','cm_editIdx','pm_editIdx','lm_editIdx','fm_editIdx'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  // reset station lat/lng
+  if(type==='station'){
+    document.getElementById('sm_editId').value='';
+    document.getElementById('sm_lat').value='';
+    document.getElementById('sm_lng').value='';
+    document.getElementById('stationModalTitle').textContent='🏛 Thêm / Sửa nhà trạm';
+  }
+  buildColorStrips();
+  document.getElementById(mid).classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function buildColorStrips() {
+  ['fiberColorStrip','cableColorStrip','labelColorStrip'].forEach(stripId=>{
+    const el=document.getElementById(stripId);
+    if(!el)return;
+    const inputId=stripId.replace('Strip','').replace('fiber','fm').replace('cable','cm').replace('label','lm')+'_color';
+    el.innerHTML=FIBER_COLORS.map(c=>`
+      <div class="cswatch" style="background:${c.c}" title="${c.n}" onclick="selectColor('${stripId}','${inputId}','${c.c}',this)"></div>`).join('');
+  });
+}
+
+function selectColor(stripId,inputId,color,el) {
+  document.getElementById(inputId).value=color;
+  document.querySelectorAll('#'+stripId+' .cswatch').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ══════════════════════════════
+// SAVE FUNCTIONS
+// ══════════════════════════════
+function saveStation() {
+  const editId=document.getElementById('sm_editId').value;
+  const obj={
+    id:document.getElementById('sm_id').value.trim().toUpperCase(),
+    ten:document.getElementById('sm_name').value.trim(),
+    dia_chi:document.getElementById('sm_addr').value.trim(),
+    loai:document.getElementById('sm_type').value,
+    trang_thai:document.getElementById('sm_status').value,
+    mo_ta:document.getElementById('sm_desc').value.trim(),
+    ket_noi:document.getElementById('sm_conn').value.trim(),
+    lat:parseFloat(document.getElementById('sm_lat').value)||null,
+    lng:parseFloat(document.getElementById('sm_lng').value)||null,
+  };
+  if(!obj.id){alert('Vui lòng nhập mã trạm');return;}
+  if(editId){
+    const idx=DB.stations.findIndex(s=>s.id===editId);
+    if(idx>=0) DB.stations[idx]={...DB.stations[idx],...obj};
+  } else {
+    if(DB.stations.find(s=>s.id===obj.id)){alert('Mã trạm đã tồn tại');return;}
+    DB.stations.push(obj);
+  }
+  closeModal('stationModal');
+  renderSB(DB.stations);
+  updateStats();
+  if(currentStnId===obj.id) renderTab(); else renderWelcome();
+  toast('✅ Đã lưu trạm '+obj.id);
+  saveToLocal();
+}
+
+function editStation(id) {
+  const s=DB.stations.find(x=>x.id===id);
+  if(!s)return;
+  document.getElementById('sm_editId').value=s.id;
+  document.getElementById('sm_id').value=s.id;
+  document.getElementById('sm_name').value=s.ten||'';
+  document.getElementById('sm_addr').value=s.dia_chi||'';
+  document.getElementById('sm_type').value=s.loai||'access';
+  document.getElementById('sm_status').value=s.trang_thai||'online';
+  document.getElementById('sm_desc').value=s.mo_ta||'';
+  document.getElementById('sm_conn').value=s.ket_noi||'';
+  document.getElementById('sm_lat').value=s.lat||'';
+  document.getElementById('sm_lng').value=s.lng||'';
+  document.getElementById('stationModalTitle').textContent='✏ Sửa trạm '+id;
+  document.getElementById('stationModal').classList.add('open');
+}
+
+function deleteStation(id) {
+  if(!confirm('Xoá trạm '+id+'? Tất cả dữ liệu thiết bị, ODF, cáp sẽ bị xoá.'))return;
+  DB.stations=DB.stations.filter(s=>s.id!==id);
+  delete DB.devices[id]; delete DB.odfs[id]; delete DB.cables[id]; delete DB.power[id]; delete DB.labels[id];
+  Object.keys(DB.fibers).filter(k=>k.startsWith(id)).forEach(k=>delete DB.fibers[k]);
+  renderSB(DB.stations); updateStats(); renderWelcome(); saveToLocal();
+  toast('🗑 Đã xoá trạm '+id);
+}
+
+function saveDevice() {
+  const idx=document.getElementById('dm_editIdx').value;
+  const id=currentStnId;
+  if(!DB.devices[id]) DB.devices[id]=[];
+  const obj={
+    id:document.getElementById('dm_id').value.trim(),
+    type:document.getElementById('dm_type').value,
+    model:document.getElementById('dm_model').value.trim(),
+    seri:document.getElementById('dm_seri').value.trim(),
+    slot:document.getElementById('dm_slot').value.trim(),
+    status:document.getElementById('dm_status').value,
+    ports:document.getElementById('dm_ports').value.trim(),
+    year:document.getElementById('dm_year').value,
+    note:document.getElementById('dm_note').value.trim(),
+  };
+  if(!obj.id){alert('Vui lòng nhập ký hiệu thiết bị');return;}
+  if(idx!=='') DB.devices[id][parseInt(idx)]=obj;
+  else DB.devices[id].push(obj);
+  closeModal('deviceModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu thiết bị '+obj.id);
+}
+function editDevice(i) {
+  const d=(DB.devices[currentStnId]||[])[i];
+  if(!d)return;
+  document.getElementById('dm_editIdx').value=i;
+  document.getElementById('dm_id').value=d.id;
+  document.getElementById('dm_type').value=d.type;
+  document.getElementById('dm_model').value=d.model;
+  document.getElementById('dm_seri').value=d.seri||'';
+  document.getElementById('dm_slot').value=d.slot;
+  document.getElementById('dm_status').value=d.status;
+  document.getElementById('dm_ports').value=d.ports;
+  document.getElementById('dm_year').value=d.year||'';
+  document.getElementById('dm_note').value=d.note||'';
+  document.getElementById('deviceModal').classList.add('open');
+}
+function deleteDevice(i) {
+  if(!confirm('Xoá thiết bị này?'))return;
+  DB.devices[currentStnId].splice(i,1);
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá thiết bị');
+}
+
+function saveODF() {
+  const idx=document.getElementById('om_editIdx').value;
+  const id=currentStnId;
+  if(!DB.odfs[id]) DB.odfs[id]=[];
+  const obj={
+    id:document.getElementById('om_id').value.trim(),
+    model:document.getElementById('om_model').value.trim(),
+    total:parseInt(document.getElementById('om_total').value)||48,
+    conn:document.getElementById('om_conn').value,
+    slot:document.getElementById('om_slot').value.trim(),
+    seri:document.getElementById('om_seri').value.trim(),
+    note:document.getElementById('om_note').value.trim(),
+  };
+  if(!obj.id){alert('Vui lòng nhập ký hiệu ODF');return;}
+  if(idx!=='') DB.odfs[id][parseInt(idx)]=obj;
+  else DB.odfs[id].push(obj);
+  closeModal('odfModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu ODF '+obj.id);
+}
+function editODF(i) {
+  const o=(DB.odfs[currentStnId]||[])[i];
+  if(!o)return;
+  document.getElementById('om_editIdx').value=i;
+  document.getElementById('om_id').value=o.id;
+  document.getElementById('om_model').value=o.model;
+  document.getElementById('om_total').value=o.total;
+  document.getElementById('om_conn').value=o.conn;
+  document.getElementById('om_slot').value=o.slot;
+  document.getElementById('om_seri').value=o.seri||'';
+  document.getElementById('om_note').value=o.note||'';
+  document.getElementById('odfModal').classList.add('open');
+}
+function deleteODF(i) {
+  if(!confirm('Xoá ODF này?'))return;
+  const odf=DB.odfs[currentStnId][i];
+  DB.odfs[currentStnId].splice(i,1);
+  delete DB.fibers[currentStnId+'|'+odf.id];
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá ODF');
+}
+
+function editFiberPort(stnId,odfId,port) {
+  currentODFId=odfId;
+  const key=stnId+'|'+odfId;
+  if(!DB.fibers[key]) DB.fibers[key]=[];
+  const idx=DB.fibers[key].findIndex(f=>f.port===port);
+  const f=idx>=0?DB.fibers[key][idx]:null;
+  document.getElementById('fm_editIdx').value=idx>=0?idx:'';
+  document.getElementById('fm_odfId').value=odfId;
+  document.getElementById('fm_port').value=port;
+  document.getElementById('fm_status').value=f?f.status:'free';
+  document.getElementById('fm_fiber').value=f?f.fiber:'SM-G652D';
+  document.getElementById('fm_label').value=f?f.label||'':'';
+  document.getElementById('fm_from').value=f?f.from||'':'';
+  document.getElementById('fm_to').value=f?f.to||'':'';
+  document.getElementById('fm_color').value=f?f.color:'#00d4ff';
+  document.getElementById('fm_tube').value=f?f.tube||'':'';
+  document.getElementById('fm_pos').value=f?f.pos||'':'';
+  document.getElementById('fm_note').value=f?f.note||'':'';
+  buildColorStrips();
+  document.getElementById('fiberModal').classList.add('open');
+}
+function saveFiber() {
+  const stnId=currentStnId;
+  const odfId=document.getElementById('fm_odfId').value;
+  const key=stnId+'|'+odfId;
+  if(!DB.fibers[key]) DB.fibers[key]=[];
+  const idx=document.getElementById('fm_editIdx').value;
+  const obj={
+    port:parseInt(document.getElementById('fm_port').value),
+    status:document.getElementById('fm_status').value,
+    fiber:document.getElementById('fm_fiber').value,
+    label:document.getElementById('fm_label').value.trim(),
+    from:document.getElementById('fm_from').value.trim(),
+    to:document.getElementById('fm_to').value.trim(),
+    color:document.getElementById('fm_color').value,
+    tube:document.getElementById('fm_tube').value.trim(),
+    pos:parseInt(document.getElementById('fm_pos').value)||1,
+    note:document.getElementById('fm_note').value.trim(),
+  };
+  if(idx!=='') DB.fibers[key][parseInt(idx)]=obj;
+  else DB.fibers[key].push(obj);
+  closeModal('fiberModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu cổng '+obj.port);
+}
+function deleteFiber(stnId,odfId,i) {
+  if(!confirm('Xoá cổng này?'))return;
+  DB.fibers[stnId+'|'+odfId].splice(i,1);
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá cổng');
+}
+
+function saveCable() {
+  const idx=document.getElementById('cm_editIdx').value;
+  const id=currentStnId;
+  if(!DB.cables[id]) DB.cables[id]=[];
+  const obj={
+    id:document.getElementById('cm_id').value.trim(),
+    color:document.getElementById('cm_color').value,
+    from:document.getElementById('cm_from').value.trim(),
+    to:document.getElementById('cm_to').value.trim(),
+    type:document.getElementById('cm_type').value,
+    fibers:parseInt(document.getElementById('cm_fibers').value)||24,
+    length:parseFloat(document.getElementById('cm_length').value)||0,
+    route:document.getElementById('cm_route').value,
+    label:document.getElementById('cm_label').value.trim(),
+    year:document.getElementById('cm_year').value,
+    note:document.getElementById('cm_note').value.trim(),
+  };
+  if(!obj.id){alert('Vui lòng nhập mã tuyến cáp');return;}
+  if(idx!=='') DB.cables[id][parseInt(idx)]=obj;
+  else DB.cables[id].push(obj);
+  closeModal('cableModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu tuyến cáp '+obj.id);
+}
+function editCable(i) {
+  const c=(DB.cables[currentStnId]||[])[i];
+  if(!c)return;
+  document.getElementById('cm_editIdx').value=i;
+  document.getElementById('cm_id').value=c.id;
+  document.getElementById('cm_color').value=c.color;
+  document.getElementById('cm_from').value=c.from;
+  document.getElementById('cm_to').value=c.to;
+  document.getElementById('cm_type').value=c.type;
+  document.getElementById('cm_fibers').value=c.fibers;
+  document.getElementById('cm_length').value=c.length;
+  document.getElementById('cm_route').value=c.route;
+  document.getElementById('cm_label').value=c.label||'';
+  document.getElementById('cm_year').value=c.year||'';
+  document.getElementById('cm_note').value=c.note||'';
+  buildColorStrips();
+  document.getElementById('cableModal').classList.add('open');
+}
+function deleteCable(i) {
+  if(!confirm('Xoá tuyến cáp?'))return;
+  DB.cables[currentStnId].splice(i,1);
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá tuyến cáp');
+}
+
+function savePower() {
+  const idx=document.getElementById('pm_editIdx').value;
+  const id=currentStnId;
+  if(!DB.power[id]) DB.power[id]=[];
+  const obj={
+    id:document.getElementById('pm_id').value.trim(),
+    type:document.getElementById('pm_type').value,
+    model:document.getElementById('pm_model').value.trim(),
+    seri:document.getElementById('pm_seri').value.trim(),
+    spec:document.getElementById('pm_spec').value.trim(),
+    status:document.getElementById('pm_status').value,
+    wirelabel:document.getElementById('pm_wirelabel').value.trim(),
+    slot:document.getElementById('pm_slot').value.trim(),
+    batt:document.getElementById('pm_batt').value,
+    year:document.getElementById('pm_year').value,
+    note:document.getElementById('pm_note').value.trim(),
+  };
+  if(!obj.id){alert('Vui lòng nhập ký hiệu');return;}
+  if(idx!=='') DB.power[id][parseInt(idx)]=obj;
+  else DB.power[id].push(obj);
+  closeModal('powerModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu '+obj.id);
+}
+function editPower(i) {
+  const p=(DB.power[currentStnId]||[])[i];
+  if(!p)return;
+  document.getElementById('pm_editIdx').value=i;
+  ['id','type','model','seri','spec','status','wirelabel','slot','batt','year','note'].forEach(f=>{
+    document.getElementById('pm_'+f).value=p[f]||'';
+  });
+  document.getElementById('powerModal').classList.add('open');
+}
+function deletePower(i) {
+  if(!confirm('Xoá thành phần nguồn?'))return;
+  DB.power[currentStnId].splice(i,1);
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá');
+}
+
+function saveLabel() {
+  const idx=document.getElementById('lm_editIdx').value;
+  const id=currentStnId;
+  if(!DB.labels[id]) DB.labels[id]=[];
+  const obj={
+    id:document.getElementById('lm_id').value.trim(),
+    type:document.getElementById('lm_type').value,
+    text:document.getElementById('lm_text').value.trim(),
+    attach:document.getElementById('lm_attach').value.trim(),
+    color:document.getElementById('lm_color').value,
+    note:document.getElementById('lm_note').value.trim(),
+  };
+  if(!obj.id){alert('Vui lòng nhập mã nhãn');return;}
+  if(idx!=='') DB.labels[id][parseInt(idx)]=obj;
+  else DB.labels[id].push(obj);
+  closeModal('labelModal'); renderTab(); saveToLocal();
+  toast('✅ Đã lưu nhãn '+obj.id);
+}
+function editLabel(i) {
+  const l=(DB.labels[currentStnId]||[])[i];
+  if(!l)return;
+  document.getElementById('lm_editIdx').value=i;
+  document.getElementById('lm_id').value=l.id;
+  document.getElementById('lm_type').value=l.type;
+  document.getElementById('lm_text').value=l.text;
+  document.getElementById('lm_attach').value=l.attach||'';
+  document.getElementById('lm_color').value=l.color;
+  document.getElementById('lm_note').value=l.note||'';
+  buildColorStrips();
+  document.getElementById('labelModal').classList.add('open');
+}
+function deleteLabel(i) {
+  if(!confirm('Xoá nhãn?'))return;
+  DB.labels[currentStnId].splice(i,1);
+  renderTab(); saveToLocal(); toast('🗑 Đã xoá nhãn');
+}
+
+// ══════════════════════════════
+// IMPORT / EXPORT
+// ══════════════════════════════
+function importExcel() { openModal('import'); }
+
+function handleImport(input) {
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const lines=text.split('\n');
+    if(lines.length<2){alert('File không hợp lệ');return;}
+    const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+    const imported=[];
+    for(let i=1;i<lines.length;i++){
+      const vals=lines[i].split(',').map(v=>v.trim().replace(/"/g,''));
+      const obj={};
+      headers.forEach((h,j)=>obj[h]=vals[j]||'');
+      if(obj.id||obj['mã trạm']) imported.push(obj);
+    }
+    if(!imported.length){alert('Không đọc được dữ liệu. Kiểm tra cấu trúc file.');return;}
+    imported.forEach(row=>{
+      const s={id:row.id||row['mã trạm'],ten:row.ten||row['tên trạm']||row.id,dia_chi:row.dia_chi||row['địa chỉ']||'',loai:(row.loai||row['loại']||'access').toLowerCase(),trang_thai:(row.trang_thai||row['trạng thái']||'online').toLowerCase(),mo_ta:row.mo_ta||row['mô tả']||'',ket_noi:row.ket_noi||row['kết nối']||''};
+      if(!DB.stations.find(x=>x.id===s.id)) DB.stations.push(s);
+    });
+    renderSB(DB.stations); updateStats(); renderWelcome();
+    closeModal('importModal'); saveToLocal();
+    toast('✅ Import thành công '+imported.length+' trạm');
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function downloadTemplate() {
+  const csv='id,ten,dia_chi,loai,trang_thai,mo_ta,ket_noi\nHN-CORE-01,Trạm Core HN,5 Trần Hưng Đạo Hà Nội,core,online,Trạm lõi kết nối backbone,HN-DIST-01\nHN-DIST-01,Trạm Dist Q1,78 Bà Triệu Hà Nội,dist,online,,HN-CORE-01\nHN-ACC-01,Trạm Access PA,Phường A Q1,access,online,,HN-DIST-01';
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ttvtchuse_net-template.csv'; a.click();
+}
+
+function exportData() {
+  const data=JSON.stringify(DB,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ttvtchuse_net-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  toast('✅ Đã xuất file backup JSON');
+}
+
+function showHelp() {
+  alert('📖 TTVTCHUSE_NET v3 — Hướng dẫn nhanh\n\n1. Click trạm bên trái để xem chi tiết\n2. Mỗi tab (Thiết bị / ODF / Cáp / Nguồn / Nhãn) có nút "＋ Thêm"\n3. Click vào ô ODF để sửa từng cổng sợi quang\n4. Nút "⚡ Tạo nhanh" để tạo tất cả cổng ODF cùng lúc\n5. "↓ Xuất Excel" để backup dữ liệu\n6. Dữ liệu tự lưu vào trình duyệt (localStorage)');
+}
+
+// ══════════════════════════════
+// LOCAL STORAGE
+// ══════════════════════════════
+function saveToLocal() {
+  try { localStorage.setItem('ttvtchuse_net_v3',JSON.stringify(DB)); } catch(e){}
+}
+function loadFromLocal() {
+  try {
+    const d=localStorage.getItem('ttvtchuse_net_v3');
+    if(d) { DB=JSON.parse(d); return true; }
+  } catch(e){}
+  return false;
+}
+
+// ══════════════════════════════
+// TOAST
+// ══════════════════════════════
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════
+// CLOSE ON OVERLAY CLICK
+// ══════════════════════════════
+document.querySelectorAll('.overlay').forEach(el=>{
+  el.addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+  });
+});
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+// ══════════════════════════════
+// MAP
+// ══════════════════════════════
+let mapInstance = null;
+let mapMarkers = [];
+
+function showMapPanel() {
+  // Hide detail/welcome, show map panel
+  const content = document.getElementById('mainContent');
+  const mapPanel = document.getElementById('mapPanel');
+  const mapBar = document.getElementById('mapGlobalBar');
+  content.style.display = 'none';
+  mapBar.style.display = 'flex';
+  mapPanel.style.display = 'flex';
+  mapPanel.style.flexDirection = 'column';
+
+  if (!document.getElementById('mapContainer')) {
+    mapPanel.innerHTML = `
+      <div style="position:relative;flex:1;">
+        <div id="mapContainer"></div>
+        <div class="map-legend">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);margin-bottom:6px;text-transform:uppercase">Chú thích</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:#00ff9d;box-shadow:0 0 6px #00ff9d"></div>Online</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:#ffb800;box-shadow:0 0 6px #ffb800"></div>Cảnh báo</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:#ff4757;box-shadow:0 0 6px #ff4757"></div>Sự cố</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:#64748b"></div>Chưa có tọa độ</div>
+          <hr style="border-color:var(--border);margin:6px 0">
+          <div style="font-size:9px;color:var(--dim)">🔵 Core &nbsp; 🟢 Dist &nbsp; 🟠 Access</div>
+        </div>
+        <div style="position:absolute;top:10px;right:10px;background:rgba(10,14,26,.92);border:1px solid var(--border);border-radius:8px;padding:8px 12px;z-index:1000;display:flex;gap:14px;font-family:'JetBrains Mono',monospace;font-size:10px;">
+          <span style="color:var(--green)">●${DB.stations.filter(s=>s.trang_thai==='online').length} online</span>
+          <span style="color:var(--warn)">▲${DB.stations.filter(s=>s.trang_thai==='warn').length} cảnh báo</span>
+          <span style="color:var(--accent)">📍${DB.stations.filter(s=>s.lat&&s.lng).length}/${DB.stations.length} có tọa độ</span>
+        </div>
+      </div>`;
+  }
+
+  setTimeout(() => initMap(), 100);
+}
+
+function closeMapPanel() {
+  const content = document.getElementById('mainContent');
+  const mapPanel = document.getElementById('mapPanel');
+  const mapBar = document.getElementById('mapGlobalBar');
+  content.style.display = 'block';
+  mapBar.style.display = 'none';
+  mapPanel.style.display = 'none';
+}
+
+function initMap() {
+  const container = document.getElementById('mapContainer');
+  if (!container) return;
+
+  // Set height
+  container.style.height = (window.innerHeight - 100) + 'px';
+
+  // Find center from stations with coords
+  const withCoords = DB.stations.filter(s => s.lat && s.lng);
+  const centerLat = withCoords.length ? withCoords.reduce((a,s)=>a+s.lat,0)/withCoords.length : 21.028;
+  const centerLng = withCoords.length ? withCoords.reduce((a,s)=>a+s.lng,0)/withCoords.length : 105.804;
+
+  if (mapInstance) {
+    mapInstance.remove();
+    mapInstance = null;
+  }
+
+  mapInstance = L.map('mapContainer', {
+    center: [centerLat, centerLng],
+    zoom: withCoords.length > 1 ? 13 : 12,
+    zoomControl: true,
+  });
+
+  // Dark tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CartoDB',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  }).addTo(mapInstance);
+
+  // Draw connection lines
+  DB.stations.forEach(s => {
+    if (!s.lat || !s.lng || !s.ket_noi) return;
+    const connects = s.ket_noi.split(',').map(c=>c.trim()).filter(Boolean);
+    connects.forEach(cid => {
+      const cs = DB.stations.find(x=>x.id===cid);
+      if (cs && cs.lat && cs.lng) {
+        L.polyline([[s.lat, s.lng],[cs.lat, cs.lng]], {
+          color: '#00d4ff', weight: 2, opacity: 0.5, dashArray: '6,4'
+        }).addTo(mapInstance);
+      }
+    });
+  });
+
+  // Add markers
+  mapMarkers = [];
+  DB.stations.forEach(s => {
+    if (!s.lat || !s.lng) return;
+    const color = s.trang_thai==='online'?'#00ff9d':s.trang_thai==='warn'?'#ffb800':'#ff4757';
+    const ring = s.loai==='core'?'#00d4ff':s.loai==='dist'?'#00ff9d':'#ff6b35';
+    const iconHtml = `<div style="
+      width:${s.loai==='core'?20:s.loai==='dist'?16:13}px;
+      height:${s.loai==='core'?20:s.loai==='dist'?16:13}px;
+      background:${color};
+      border:2px solid ${ring};
+      border-radius:50%;
+      box-shadow:0 0 ${s.loai==='core'?12:8}px ${color};
+      position:relative;
+    "></div>`;
+
+    const icon = L.divIcon({
+      html: iconHtml,
+      className: '',
+      iconSize: [22,22],
+      iconAnchor: [11,11],
+      popupAnchor: [0,-14],
+    });
+
+    const typeLabel = {core:'🏛 CORE',dist:'🔗 DIST',access:'📡 ACCESS'}[s.loai]||s.loai;
+    const devCount = (DB.devices[s.id]||[]).length;
+    const odfCount = (DB.odfs[s.id]||[]).length;
+    const statusText = s.trang_thai==='online'?'<span style="color:#00ff9d">● ONLINE</span>':s.trang_thai==='warn'?'<span style="color:#ffb800">⚠ CẢNH BÁO</span>':'<span style="color:#ff4757">✕ SỰ CỐ</span>';
+
+    const popup = L.popup({
+      maxWidth: 240,
+      className: 'custom-popup',
+    }).setContent(`
+      <div class="map-stn-popup" style="font-family:sans-serif">
+        <h4 style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff;margin:0 0 4px">${s.id}</h4>
+        <p style="font-size:10px;color:#64748b;margin:0 0 2px">${typeLabel} — ${statusText}</p>
+        <p style="font-size:10px;color:#64748b;margin:0 0 2px">📍 ${s.dia_chi||''}</p>
+        <p style="font-size:10px;color:#64748b;margin:0 0 4px">📦 ${devCount} thiết bị &nbsp; 🔌 ${odfCount} ODF</p>
+        ${s.mo_ta?`<p style="font-size:10px;color:#ff6b35;margin:0 0 4px">${s.mo_ta}</p>`:''}
+        <p style="font-size:9px;color:#334155;margin:0">📌 ${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}</p>
+        <button onclick="closeMapPanel();selectStn('${s.id}')" style="margin-top:8px;padding:4px 10px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:4px;color:#00d4ff;font-size:10px;font-family:monospace;font-weight:700;cursor:pointer;width:100%">🔍 Xem chi tiết trạm</button>
+      </div>`);
+
+    const marker = L.marker([s.lat, s.lng], {icon}).addTo(mapInstance).bindPopup(popup);
+    mapMarkers.push({id:s.id, marker});
+  });
+
+  // Show stations without coords as warning
+  const noCoord = DB.stations.filter(s=>!s.lat||!s.lng);
+  if (noCoord.length > 0) {
+    const warn = L.control({position:'bottomright'});
+    warn.onAdd = function() {
+      const div = L.DomUtil.create('div');
+      div.innerHTML = `<div style="background:rgba(10,14,26,.9);border:1px solid rgba(255,184,0,.3);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:10px;color:#ffb800;max-width:200px">
+        ⚠ ${noCoord.length} trạm chưa có tọa độ:<br>
+        ${noCoord.map(s=>`<span style="color:#94a3b8">${s.id}</span>`).join(', ')}<br>
+        <span style="color:#64748b;font-size:9px">Nhấn ✏ Sửa trạm để thêm tọa độ</span>
+      </div>`;
+      return div;
+    };
+    warn.addTo(mapInstance);
+  }
+
+  // Fit bounds if multiple stations
+  if (withCoords.length > 1) {
+    const bounds = L.latLngBounds(withCoords.map(s=>[s.lat,s.lng]));
+    mapInstance.fitBounds(bounds, {padding:[40,40]});
+  }
+}
+
+function openGoogleMapsForCoord() {
+  window.open('https://maps.google.com','_blank');
+  toast('💡 Trong Google Maps: click chuột phải → copy tọa độ → dán vào ô Lat/Lng');
+}
+
+function showPublishGuide() {
+  document.getElementById('publishModal').classList.add('open');
+}
+
+// ══════════════════════════════
+window.onload=()=>{
+  const hasLocal=loadFromLocal();
+  if(!hasLocal) initDemo();
+  renderSB(DB.stations);
+  updateStats();
+  renderWelcome();
+  document.getElementById('hdrSrc').textContent=hasLocal?'💾 Dữ liệu đã lưu':'📋 Dữ liệu demo';
+};
+</script>
+</body>
+</html>
